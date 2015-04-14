@@ -1,0 +1,10 @@
+name = Stackla Core
+description = The base module of the Stackla Suite. Connects your drupal site to the Stackla service.
+dependencies[] = composer_manager
+dependencies[] = encrypt
+configure = admin/config/services/stackla
+package = Stackla
+core = 7.x
+files[] = tests/stackla.test
+
+version = 7.x-1.0

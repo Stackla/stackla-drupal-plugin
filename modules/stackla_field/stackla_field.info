@@ -1,0 +1,8 @@
+name = Stackla Widget Field
+description = Add a stackla widget to content via a field.
+dependencies[] = stackla
+package = Stackla for Drupal
+core = 7.x
+files[] = tests/stackla_field.test
+
+version = 7.x-1.0

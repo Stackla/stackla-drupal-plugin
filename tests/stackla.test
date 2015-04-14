@@ -1,0 +1,73 @@
+<?php
+
+/**
+ * @file: Stackla Base tests.
+ */
+
+class StacklaAdministrationTestCase extends DrupalWebTestCase {
+
+  protected $privilegedUser;
+  protected $notPrivilegedUser;
+
+  public static function getInfo() {
+    return array(
+      'name' => t('Stackla Administration'),
+      'description' => t('Administration function tests for Stackla Base.'),
+      'group' => t('Stackla'),
+    );
+  }
+
+  public function setUp() {
+    // Enable Stackla Base.
+    parent::setUp('stackla');
+    $this->privilegedUser = $this->drupalCreateUser(array(
+      'administer stackla',
+      'access administration pages',
+      'access site reports',
+      'administer site configuration',
+      ));
+    $this->notPrivilegedUser = $this->drupalCreateUser(array());
+  }
+
+  public function testConfigPage() {
+    $this->drupalLogin($this->privilegedUser);
+    $config_page = 'admin/config/services/stackla';
+    $test_key = 'testAPIKEY';
+    $edit = array(
+      'stackla_api_key' => $test_key,
+    );
+
+    $this->drupalGet($config_page);
+
+    $this->assertFieldById('edit-stackla-api-key','',t('The API key field appears on the config page'));
+
+    $this->drupalPost(NULL,$edit,t('Save configuration'));
+
+    $saved_key = variable_get('stackla_api_key');
+
+    $this->assertEqual($saved_key,$test_key,t('The API key is stored correctly'));
+
+    $this->assertFieldById('edit-stackla-api-key',$test_key,t('The saved key appears in the config form'));
+
+    //Check that anon users can't access the config
+    $this->drupalLogout();
+    $this->drupalGet($config_page);
+    $this->assertResponse(403, 'Access is denied on the administration page for anonymous user.');
+
+    //Check that a registered user without the correct permissions can't see the config page.
+    $this->drupalLogin($this->notPrivilegedUser);
+    $this->drupalGet($config_page);
+    $this->assertResponse(403, 'Access is denied on the administration page for user without admin permission.');
+    $this->drupalLogout();
+
+  }
+
+  public function testReportPage() {
+    $this->drupalLogin($this->privilegedUser);
+    $reports_page = 'admin/reports/status';
+    $this->drupalGet($reports_page);
+    $this->assertText('Stackla SDK library','Stackla report appears in report page');
+  }
+
+}
+

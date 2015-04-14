@@ -1,0 +1,941 @@
+<?php
+
+/**
+ * @file: Stackla Base module functions.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function stackla_menu() {
+  $items = array();
+
+  $items['admin/config/services/stackla'] = array(
+    'title' => t('Stackla for Drupal'),
+    'description' => t('Configure Stackla integration.'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('stackla_settings_form'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer stackla'),
+    'file' => 'stackla.admin.inc',
+    'weight' => 0,
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['admin/config/services/stackla/accesscallback'] = array(
+    'title' => 'Stackla: Access Callback',
+    'description' => 'Callback for Stackal Oauth',
+    'page callback' => 'stackla_outh_callback',
+    'access callback' => 'user_access',
+    'access arguments' => array('administer stackla'),
+    'weight' => 0,
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function stackla_permission() {
+  return array(
+    'administer stackla' => array(
+      'title' => t('Administer Stackla Module'),
+      'description' => t('Configure Stackla Module'),
+    ),
+    'use stackla' => array(
+      'title' => t('Use Stackla Module'),
+      'description' => t('Create, edit and delete stackla widgets'),
+    ),
+  );
+}
+
+function stackla_check_requirements() {
+  if (variable_get('stackla_stack_name') &&
+      variable_get('stackla_stack_oauth_host') &&
+      variable_get('stackla_stack_name') &&
+      variable_get('stackla_client_id') &&
+      variable_get('stackla_client_secret') &&
+      stackla_user_rights()
+  ) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+function stackla_authenticate() {
+  global $base_url;
+  if (!stackla_check_requirements()) {
+    return FALSE;
+  }
+  $client_id = variable_get('stackla_client_id');
+  $host = variable_get('stackla_stack_oauth_host');
+  $stack = variable_get('stackla_stack_name');
+  $client_secret = variable_get('stackla_client_secret');
+  $callback = $base_url . '/admin/config/services/stackla/accesscallback';
+  $credentials = new Stackla\Core\Credentials($host, null, $stack);
+  $access_uri = $credentials->getAccessUri($client_id, $client_secret, $callback);
+
+  drupal_goto($access_uri);
+}
+
+function stackla_revoke_authentication() {
+  // Clear any other messages.
+  drupal_get_messages();
+  global $user;
+
+  stackla_unset_access_token();
+  drupal_set_message(t('Successfully revoked Stackla authentication'), 'status');
+
+  if (!empty($user->data['stackla_return_path'])) {
+    $goto = $user->data['stackla_return_path'];
+    unset($user->data['stackla_return_path']);
+    user_save($user);
+  }
+  else {
+    $goto = 'admin/config/services/stackla';
+  }
+  drupal_goto($goto);
+}
+
+function stackla_user_authenticate($return_path = NULL) {
+  if ($return_path) {
+    // Store the return path in the user
+    global $user;
+    $user->data['stackla_return_path'] = $return_path;
+    user_save($user);
+  }
+  stackla_authenticate();
+}
+
+/**
+ * Callback for Oauth authentication.
+ */
+function stackla_outh_callback() {
+  // Clear any other messages.
+  drupal_get_messages();
+  global $user;
+  global $base_url;
+
+  if (isset($_GET['code'])) {
+    $access_code = $_GET['code'];
+    $client_id = variable_get('stackla_client_id');
+    $host = variable_get('stackla_stack_oauth_host');
+    $stack = variable_get('stackla_stack_name');
+    $client_secret = variable_get('stackla_client_secret');
+    $callback = $base_url . '/admin/config/services/stackla/accesscallback';
+
+    if (variable_get('stackla_debug_mode') == 1) {
+      watchdog('stackla', 'Sending token request: host: @host, stack: @stack client id: @client_id, client secret: @client_secret, access code: @access_code, callback: @callback', array(
+        '@stack' => $stack,
+        '@host' => $host,
+        '@client_id' => $client_id,
+        '@client_secret' => $client_secret,
+        '@access_code' => $access_code,
+        '@callback' => $callback,
+      ));
+    }
+
+    $credentials = new Stackla\Core\Credentials($host, null, $stack);
+    $response = $credentials->generateToken($client_id, $client_secret, $access_code, $callback);
+
+    if ($response === false) {
+      drupal_set_message(t('Failed to authorize with Stackla.'), 'error');
+    }
+    else {
+      stackla_set_access_token($credentials->token);
+      drupal_set_message(t('Successfully authorized with Stackla'), 'status');
+    }
+  }
+  elseif (isset($_GET['error']) && isset($_GET['error_description'])) {
+      drupal_set_message(t($_GET['error_description']), 'error');
+  }
+  if (!empty($user->data['stackla_return_path'])) {
+    $goto = $user->data['stackla_return_path'];
+    unset($user->data['stackla_return_path']);
+    user_save($user);
+  }
+  else {
+    $goto = 'admin/config/services/stackla';
+  }
+  drupal_goto($goto);
+}
+
+/**
+ * Check Stacka authentication.
+ *
+ * @return bool
+ *  TRUE if authenticated.
+ */
+function stackla_is_authenticated() {
+  // First check permissions.
+  if(!stackla_user_rights()) {
+    return FALSE;
+  }
+
+  // If the variables are not set, we don't need to check anything else.
+  if (!stackla_get_access_token() || !stackla_check_requirements()) {
+    return FALSE;
+  }
+  $stack = stackla_create_stack();
+
+  $term = $stack->instance('term');
+  try {
+    $term->get();
+  } catch (Exception $ex) {
+    //Some sort of fetch error. It doesn't really matter which.
+  }
+
+  if ($term->getResponseCode() == 200) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+function stackla_user_rights() {
+  //Check that the current user has the correct permissions set up.
+  if(!(user_access('use stackla')) && !(user_access('administer stackla'))) {
+    return FALSE;
+  }
+  else {
+    return TRUE;
+  }
+}
+
+/**
+ * Retrieve Stackla access token.
+ *
+ *  @return string
+ *    The access token string or FALSE if not present.
+ */
+function stackla_get_access_token() {
+  global $user;
+  if (!empty($user->data['stackla_access_token'])) {
+    return decrypt($user->data['stackla_access_token']);
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Set Stackla access token.
+ *  @param string $token
+ *    The token string to set.
+ *  @return boolean
+ *    TRUE if successful.
+ */
+function stackla_set_access_token($token) {
+  $encrypted_token = encrypt($token);
+  global $user;
+  $user->data['stackla_access_token'] = $encrypted_token;
+  user_save($user);
+  return TRUE;
+}
+
+/**
+ * Unset Stackla access token.
+ *  @return boolean
+ *    TRUE if successful.
+ */
+function stackla_unset_access_token() {
+  global $user;
+  unset($user->data['stackla_access_token']);
+  user_save($user);
+  return TRUE;
+}
+
+/**
+ * Create a new Stackla Term
+ *
+ *  @param array $term
+ *    Array of term data:
+ *    'name' => The name of the term
+ *    'network' => The machine name of the network eg 'twitter'.
+ *    'type' => The query type machine name, eg 'hashtag'.
+ *    'value' => They query value, eg 'bananas'.
+ *  @return type
+ *
+ */
+function stackla_create_term($term) {
+
+  if (variable_get('stackla_debug_mode') == 1) {
+
+    watchdog('stackla', 'Attempting to create term. Values: <pre>@values</pre>', array(
+      '@values' => print_r($term, TRUE),
+        ), WATCHDOG_NOTICE);
+  }
+
+  $tag = stackla_load_tag($term['tag_id']);
+  $stack = stackla_create_stack();
+
+  $new_term = $stack->instance('term');
+
+  // populating term properties
+  $new_term->name = $term['name'];
+  $new_term->display_name = $term['name'];
+  $new_term->active = 1;
+  $new_term->num_of_backfill = 0;
+  $new_term->term = $term['value'];
+  $new_term->type = $term['type'];
+  $new_term->filter = '';
+  $new_term->network = $term['network'];
+  $new_term->addTag($tag);
+
+  // Create the term
+  try {
+    $new_term->create();
+  } catch (Exception $ex) {
+    $error = $new_term->getErrors();
+    watchdog('stackla', 'Error creating term. Error: <pre>@values</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
+  }
+
+  return $new_term;
+}
+
+/**
+ * Update a term.
+ *
+ *  @param array $term
+ *    update term values
+ *  @param array $original_term
+ *    original term values
+ *  @return obj
+ *    update term object from Stackla.
+ */
+function stackla_update_term($term, $original_term) {
+  if (variable_get('stackla_debug_mode') == 1) {
+
+    watchdog('stackla', 'Attempting to update term. Values: <pre>@values</pre>', array(
+      '@values' => print_r($term, TRUE),
+        ), WATCHDOG_NOTICE);
+  }
+
+  $stack = stackla_create_stack();
+
+  $updated_term = $stack->instance('term', $term['stackla_id']);
+
+  // populating term properties
+  $updated_term->name = $term['name'];
+  $updated_term->display_name = $term['name'];
+  $updated_term->active = 1;
+  $updated_term->num_of_backfill = 0;
+  $updated_term->term = $term['value'];
+  $updated_term->type = $term['type'];
+  $updated_term->filter = '';
+  $updated_term->network = $term['network'];
+
+  // Create the term
+  try {
+    $updated_term->update();
+  } catch (Exception $ex) {
+    $error = $updated_term->getErrors();
+    watchdog('stackla', 'Error updating term. Error: <pre>@values</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
+  }
+
+  return $updated_term;
+}
+
+/**
+ *
+ * Delete a term.
+ *
+ * @param type $term_id
+ * @return type
+ */
+function stackla_delete_term($term_id) {
+  $stack = stackla_create_stack();
+
+  $term = $stack->instance('term', $term_id, FALSE);
+
+  try {
+    $term->delete();
+  } catch (Exception $ex) {
+    $error = $term->getErrors();
+    watchdog('stackla', 'Error creating term. Error: <pre>@values</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
+  }
+
+  return $term;
+}
+
+/**
+ * Delete a tag.
+ */
+function stackla_delete_tag($tag_id) {
+  $stack = stackla_create_stack();
+
+  $tag = $stack->instance('tag', $tag_id, FALSE);
+
+  try {
+    $tag->delete();
+  } catch (Exception $ex) {
+    $error = $tag->getErrors();
+    watchdog('stackla', 'Error deleting tag. Error: <pre>@values</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
+  }
+
+  return $tag;
+}
+
+/**
+ * Create a Stackla Filter.
+ * Refer to stackla API documentation for allowed values.
+ *
+ *  @param array $filter
+ *    The filter data to create. Values:
+ *      'name' (string) => The filter name.
+ *      'networks' (array) => numerically keyed array of networks.
+ *      'media' (array) => numerically keyed array of keys.
+ *      'sort' (string) => sort type.
+ *  @return obj
+ *    The stacka filter object returned from the remote call.
+ */
+function stackla_create_filter($filter) {
+  if (variable_get('stackla_debug_mode') == 1) {
+    watchdog('stackla', 'Attempting to create filter. Values: <pre>@values</pre>', array(
+      '@values' => print_r($filter, TRUE),
+        ), WATCHDOG_NOTICE);
+  }
+
+  $stack = stackla_create_stack();
+
+  $new_filter = $stack->instance('filter');
+  // Populate filter properties
+  $new_filter->name = $filter['name'];
+  $new_filter->networks = $filter['networks'];
+  $new_filter->media = $filter['media'];
+  $new_filter->sort = $filter['sort'];
+
+  if (!empty($filter['tag_id'])) {
+    $tag = stackla_load_tag($filter['tag_id']);
+    try {
+      $new_filter->addTag($tag);
+    } catch (Exception $ex) {
+      $error = $new_filter->getErrors();
+      watchdog('stackla', 'Error adding tag to filter. Error: <pre>@values</pre>', array(
+        '@values' => print_r($error, TRUE),
+          ), WATCHDOG_ERROR);
+    }
+  }
+
+  try {
+    $new_filter->create();
+  } catch (Exception $ex) {
+    $error = $new_filter->getErrors();
+    watchdog('stackla', 'Error creating filter. Error: <pre>@values</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
+  }
+
+  return $new_filter;
+}
+
+function stackla_update_filter($filter, $original_filter) {
+
+  $stack = stackla_create_stack();
+
+  // Easiest way to update is create a new filter object locally,
+  // populate with submitted data, then send.
+  // In future we can get fancy here by only sending changed data etc.
+
+  $updated_filter = $stack->instance('filter', $filter['stackla_id']);
+  // Populate filter properties
+  $updated_filter->name = $filter['name'];
+  $updated_filter->networks = $filter['networks'];
+  $updated_filter->media = $filter['media'];
+  $updated_filter->sort = $filter['sort'];
+
+  if (variable_get('stackla_debug_mode') == 1) {
+
+    watchdog('stackla', 'Attempting to update filter. New values: <pre>@new_values</pre>, original values: <pre>@orig_values</pre>, new filter object: <pre>@filter_obj</pre>', array(
+      '@new_values' => print_r($filter, TRUE),
+      '@orig_values' => print_r($original_filter, TRUE),
+      '@filter_obj' => print_r($updated_filter, TRUE),
+        ), WATCHDOG_NOTICE);
+  }
+
+
+  try {
+    $updated_filter->update();
+  } catch (Exception $ex) {
+    watchdog('stackla', 'Error updating filter. Values: <pre>@values</pre>', array(
+      '@values' => print_r($filter, TRUE),
+        ), WATCHDOG_ERROR);
+  }
+
+  if (!empty($filter['tag_id'])) {
+    $tag = stackla_load_tag($filter['tag_id']);
+    try {
+      $updated_filter->addTag($tag);
+    } catch (Exception $ex) {
+      watchdog('stackla', 'Error adding tag to filter. Values: <pre>@values</pre>', array(
+        '@values' => print_r($filter, TRUE),
+          ), WATCHDOG_ERROR);
+    }
+  }
+
+  return $updated_filter;
+}
+
+function stackla_get_filter($filter_id) {
+  $stack = stackla_create_stack();
+  $filter = $stack->instance('filter');
+  try {
+    $filter->getById($filter_id);
+  } catch (Exception $ex) {
+    //
+  }
+
+  if ($filter->getResponseCode() == 200) {
+    return $filter;
+  }
+  else {
+    return FALSE;
+  }
+
+}
+
+/**
+ * Delete a stackla element
+ *
+ *  @param string $element
+ *    The name of the element to delete.
+ *    Can be 'filter' , 'term' , 'widget' , 'tag'.
+ *  @param string $filter_id
+ *    The id of the element to delete.
+ *  @return obj
+ *    The deleted elemnt or FALSE.
+ */
+function stackla_delete_element($element,$filter_id) {
+
+  // Validate element.
+  $valid_elements  = array('filter','term','widget','tag');
+  if(!in_array($element, $valid_elements)) {
+    return FALSE;
+  }
+
+  $stack = stackla_create_stack();
+
+  $model = $stack->instance($element, $filter_id, FALSE);
+
+  try {
+    $model->delete();
+  } catch (Exception $ex) {
+    watchdog('stackla', 'Error deleting @name. Values: <pre>@values</pre>', array(
+      '@name' => $element,
+      '@values' => print_r($filter_id, TRUE),
+        ), WATCHDOG_ERROR);
+  }
+
+  return $model;
+}
+
+
+function stackla_delete_filter($filter_id) {
+  $stack = stackla_create_stack();
+
+  $filter = $stack->instance('filter', $filter_id, FALSE);
+
+  try {
+    $filter->delete();
+  } catch (Exception $ex) {
+    watchdog('stackla', 'Error deleting filter. Values: <pre>@values</pre>', array(
+      '@values' => print_r($filter_id, TRUE),
+        ), WATCHDOG_ERROR);
+  }
+
+  return $filter;
+}
+
+function stackla_create_tag($tag) {
+  $stack = stackla_create_stack();
+
+  $new_tag = $stack->instance('tag');
+
+  // Populate filter properties
+  $new_tag->tag = $tag['tag'];
+  $new_tag->type = $tag['type'];
+  if (!empty($tag['slug'])) {
+    $new_tag->slug = $tag['slug'];
+  }
+  $new_tag->publicly_visible = $tag['publicly_visible'];
+
+  try {
+    $new_tag->create();
+  } catch (Exception $ex) {
+    watchdog('stackla', 'Error creating tag. Values: <pre>@values</pre>', array(
+      '@values' => print_r($tag, TRUE),
+        ), WATCHDOG_ERROR);
+  }
+
+  return $new_tag;
+}
+
+function stackla_load_tag($tag_id, $fetch = true) {
+  $stack = stackla_create_stack();
+
+  $tag = $stack->instance('tag', $tag_id, $fetch);
+
+  return $tag;
+}
+
+/**
+ * Create widget
+ *  @param array $widget
+ *    Widget parameters
+ * @return object
+ *  Created object or object with errors as per the SDK.
+ */
+function stackla_create_widget($widget) {
+  $stack = stackla_create_stack();
+
+  $new_widget = $stack->instance('widget');
+
+  // Populate filter properties
+  $new_widget->name = $widget['name'];
+  $new_widget->type = $widget['type'];
+  $new_widget->type_style = $widget['type_style'];
+  $new_widget->filter_id = $widget['filter_id'];
+
+  if (variable_get('stackla_debug_mode') == 1) {
+
+    watchdog('stackla', 'Attempting to create widget. New values: <pre>@new_values</pre>', array(
+      '@new_values' => print_r($widget, TRUE),
+        ), WATCHDOG_NOTICE);
+  }
+
+  try {
+    $new_widget->create();
+  } catch (Exception $ex) {
+    $error = $new_widget->getErrors();
+    watchdog('stackla', 'Error creating widget. Error: <pre>@error</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
+  }
+
+  return $new_widget;
+}
+
+/**
+ * Update a widget
+ *  @param array $widget
+ *    Widget parameters.
+ */
+function stackla_update_widget($widget) {
+  $stack = stackla_create_stack();
+
+  // Easiest way to update is create a new filter object locally,
+  // populate with submitted data, then send.
+  // In future we can get fancy here by only sending changed data etc.
+
+  $updated_widget = $stack->instance('widget', $widget['stackla_id']);
+  // Populate filter properties
+  $updated_widget->name = $widget['name'];
+  $updated_widget->type = $widget['type'];
+  $updated_widget->type_style = $widget['type_style'];
+  $updated_widget->filter_id = $widget['filter_id'];
+
+  if (variable_get('stackla_debug_mode') == 1) {
+
+    watchdog('stackla', 'Attempting to update widget. New values: <pre>@new_values</pre>, new widget object: <pre>@filter_obj</pre>', array(
+      '@new_values' => print_r($widget, TRUE),
+      '@filter_obj' => print_r($updated_widget, TRUE),
+        ), WATCHDOG_NOTICE);
+  }
+
+  try {
+    $updated_widget->update();
+  } catch (Exception $ex) {
+    $error = $updated_widget->getErrors();
+    watchdog('stackla', 'Error updating widget. Error: <pre>@error</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
+  }
+
+  return $updated_widget;
+}
+
+/**
+ * Get a list of widgets.
+ *
+ * @param int $limit
+ *  The max number of results desired.
+ * @param int $page
+ *  Desired result page.
+ * @param array $options
+ *  Request options
+ * @return obj
+ *  Stackla widgets object.
+ */
+function stackla_get_widgets($limit = 25, $page = 1, $options = array()) {
+  $stack = stackla_create_stack();
+  $widgets = $stack->instance('widget');
+
+  $widgets->get($limit, $page, $options);
+
+  return $widgets;
+}
+
+/**
+ * Load a widget.
+ *
+ *  @param sting $widget_id
+ *    The id of the widget to load.
+ *  @return obj
+ *    The loaded widget.
+ */
+function stackla_load_widget($widget_id) {
+  $stack = stackla_create_stack();
+  $widget = $stack->instance('widget', $widget_id);
+
+  return $widget;
+}
+
+/**
+ *  Clone a widget.
+ * @param array $widget
+ *  widget info array.
+ * @return obj
+ *  New widget object.
+ */
+function stackla_clone_widget($widget) {
+  $clone_parent_id = $widget['clone_parent'];
+
+  $clone_parent = stackla_load_widget($clone_parent_id);
+
+  $new_widget = null;
+  try {
+    $new_widget = $clone_parent->duplicate();
+    // update the new widget with the selected type_style.
+
+    // $new_widget->type_style = $widget['type_style'];
+
+    $new_widget->filter_id = $widget['filter_id'];
+
+    $new_widget->update();
+  } catch (Exception $e) {
+    drupal_set_message(t("Unable to clone the widget. Please make sure it's a valid widget."), 'error');
+  }
+
+  return $new_widget;
+}
+
+/**
+ * Derive a widget from an existing widget.
+ *
+ *  @param array $widget
+ *    The widget info array.
+ *  @return ojb
+ *    The cloned widget.
+ */
+function stackla_derive_widget($widget) {
+  $derive_parent_id = $widget['derive_parent'];
+
+  $derive_parent = stackla_load_widget($derive_parent_id);
+
+  try {
+    $new_widget = $derive_parent->derive($widget['filter_id'], $widget['name']);
+  } catch (Exception $e) {
+    drupal_set_message(t("Unable to derive the widget. Please make sure it's a valid widget."), 'error');
+  }
+
+  return $new_widget;
+}
+
+/**
+* Delete a widget.
+ *
+ * @param string $widget_id
+ *  The id of the widget to delete.
+ * @return obj
+ *  The deleted widget.
+ */
+function stackla_delete_widget($widget_id) {
+  $stack = stackla_create_stack();
+
+  $widget = $stack->instance('widget', $widget_id, FALSE);
+
+  try {
+    $widget->delete();
+  } catch (Exception $ex) {
+    $error = $widget->getErrors();
+    watchdog('stackla', 'Error deleting widget. Error: <pre>@error</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
+  }
+
+  return $widget;
+}
+
+/**
+ * Create stack via the Stackla SDK.
+ * @return \Stackla\Api\Stack
+ */
+function stackla_create_stack() {
+
+  $stack = &drupal_static(__FUNCTION__);
+
+  if (!isset($stack)) {
+    // Load the SDK.
+    $stackla_variables = stackla_get_variables();
+
+    if (variable_get('stackla_debug_mode') == 1) {
+
+      watchdog('stackla', 'Attempting to create stack. Values: <pre>@values</pre>', array(
+        '@values' => print_r($stackla_variables, TRUE),
+          ), WATCHDOG_NOTICE);
+    }
+    // Stackla stack name
+    $stack_name = $stackla_variables['stack_name'];
+
+    // Stackla Credentials details
+    $accessHost = $stackla_variables['oauth_host'];
+    $accessToken = $stackla_variables['access_token']; // OAuth2 access_token
+    $credentials = new \Stackla\Core\Credentials($accessHost, $accessToken, $stack_name);
+
+    // Stackla API configs
+    $stackHost = $stackla_variables['host_name'];
+    $stack = new \Stackla\Api\Stack($credentials, $stackHost, $stack_name);
+  }
+  return $stack;
+}
+
+/**
+ * Retrieve stackla credential variables.
+ * @return array
+ * Stackla credentials.
+ */
+function stackla_get_variables() {
+  $credentials = array(
+    'stack_name' => variable_get('stackla_stack_name'),
+    'oauth_host' => variable_get('stackla_oauth_host'),
+    'host_name' => variable_get('stackla_host_name'),
+    'stack_name' => variable_get('stackla_stack_name'),
+    'access_token' => stackla_get_access_token(),
+  );
+  return $credentials;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function stackla_theme($existing, $type, $theme, $path) {
+  return array(
+    'stackla_widget' => array(
+      'variables' => array(
+        'data' => array(),
+        'field_id' => 0,
+      ),
+      'template' => 'templates/stackla_widget'
+    ),
+    'stackla_filters' => array(
+      'variables' => array(
+        'filters' => array(),
+        'field_id' => 0,
+        'widget_id' => NULL,
+      ),
+    ),
+  );
+}
+
+
+/**
+ * Filters list theme function.
+ */
+function theme_stackla_filters($variables) {
+  $output = array();
+  $list_class = '.stackla-filter-list.stackla-id-' . $variables['field_id'];
+  $js = 'jQuery(\'' . $list_class . ' a\').click(function(){
+    StacklaFluidWidget.changeFilter(' . $variables['widget_id'] . ', jQuery(this).attr(\'data-filter-id\'));
+});';
+
+  $filters = $variables['filters'];
+  $filter_list_elements = array();
+  foreach ($filters as $delta => $filter) {
+    if (!empty($filter['title'])) {
+      $filter_id = $filter['stackla_id'];
+      // We don't use l() here because we don't want an href attribute on the
+      // <a> tag.
+      $filter_list_elements[] = sprintf('<a data-filter-id="%s">%s</a>', $filter_id, t($filter['title'])
+      );
+    }
+  }
+  if (!empty($filter_list_elements) && count($filter_list_elements) > 1) {
+    $output = array(
+      '#theme' => 'item_list',
+      '#items' => $filter_list_elements,
+      '#attributes' => array(
+        'class' => array('stackla-filter-list stackla-id-' . $variables['field_id']), //add id here!
+      ),
+      // add attached js here.
+      '#attached' => array(
+        'js' => array(
+          $js => array(
+            'type' => 'inline',
+            'scope' => 'footer',
+          ),
+        ),
+        'css' => array(drupal_get_path('module', 'stackla') . '/css/stackla_filters.css'),
+      ),
+    );
+  }
+
+  $rendered_output = drupal_render($output);
+  return $rendered_output;
+}
+
+
+/**
+ * Implements hook_preprocess_stackla_field().
+ */
+function stackla_preprocess_stackla_widget(&$vars) {
+  if (!empty($vars['data']['filter_menu'])) {
+    $vars['filters'] = array(
+      '#theme' => 'stackla_filters',
+      '#filters' => $vars['data']['filter_menu'],
+      '#field_id' => $vars['field_id'],
+      '#widget_id' => (!empty($vars['data']['look_and_feel']['stackla_id'])) ? $vars['data']['look_and_feel']['stackla_id'] : 0,
+    );
+  }
+  drupal_add_css(drupal_get_path('module', 'stackla') . '/css/stackla_widget.css');
+}
+
+function stackla_theme_registry_alter(&$theme_registry) {
+  $theme_registry['form_element']['theme path'] = drupal_get_path('module','stackla');
+  $theme_registry['form_element']['function'] = 'stackla_field_form_element';
+
+  $theme_registry['form_element_label']['theme path'] = drupal_get_path('module','stackla');
+  $theme_registry['form_element_label']['function'] = 'stackla_form_element_label';
+
+}
+
+function stackla_field_form_element($variables) {
+  $element = $variables['element'];
+  if (isset($element['#name'])) {
+    switch ($element['#name']) {
+      case 'stackla_oauth_callback':
+        $variables['element']['#description'];
+        break;
+    }
+  }
+  return theme_form_element($variables);
+}
+
+function stackla_form_element_label($variables) {
+  $output = theme_form_element_label($variables);
+  $element = $variables['element'];
+  if (isset($element['#description_top'])) {
+    $output .= '<div class="description">' . $element['#description_top'] . "</div>\n";
+  }
+  return $output;
+}

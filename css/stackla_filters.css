@@ -1,0 +1,27 @@
+/**
+* Basic styling for stackla filters
+*/
+
+.stackla-filter-list {
+
+}
+
+.stackla-filter-list li {
+  display: inline-block;
+}
+
+.stackla-filter-list a {
+  display: inline-block;
+  border: 1px solid grey;
+  padding: 10px;
+  margin: 3px;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.stackla-filter-list a:hover {
+  background: black;
+  color: white;
+  text-decoration: none;
+  cursor: pointer;
+}
