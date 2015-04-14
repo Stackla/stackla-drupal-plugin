@@ -35,9 +35,11 @@ function stackla_field_field_widget_info() {
  * Implements hook_field_widget_form().
  */
 function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
-
-  dpm($form_state,'form_state');
   $value = isset($items[$delta]['widget_data']) ? unserialize($items[$delta]['widget_data']) : array();
+  dpm($value, 'unserialised value');
+  dpm($form_state, 'form state');
+  dpm($field, 'field');
+  dpm($delta, 'delta');
   $widget = $element;
   $widget['#delta'] = $delta;
 
@@ -69,16 +71,20 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       '#suffix' => '</div>'
     );
 
-    $social_type_options = array(
-      '0' => t('Select Source...'),
-      'twitter_user' => t('Twitter user'),
-      'instagram_hashtag' => t('Instagram hashtag'),
-    );
-
-    $widget['social_queries'][0]['type'] = array(
+    $field_name = $field['field_name'];
+    if (!empty($form_state['values'][$field_name]['und'][$delta]['widget_data'])) {
+      $submitted_data = unserialize($form_state['values'][$field_name]['und'][$delta]['widget_data']);
+      dpm($submitted_data, 'data');
+      $social_elements = stackla_field_social_elements($submitted_data);
+    }
+    else {
+      $social_elements = stackla_field_social_elements($value);
+    }
+    $widget['social_queries'] += $social_elements;
+    $widget['social_queries'][count($social_elements)]['type'] = array(
       '#type' => 'select',
       '#options' => $social_type_options,
-      '#default_value' => (!empty($value['social_queries'][0]['type'])) ? $value['social_queries'][0]['type'] : 0,
+      '#default_value' => 0,
       '#ajax' => array(
         'callback' => 'stackla_field_ajax_social_callback',
         'wrapper' => 'st-sq-fieldset',
@@ -87,10 +93,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       ),
     );
 
-    $widget['social_queries'][0]['value'] = array(
-      '#type' => 'textfield',
-      '#default_value' => (!empty($value['social_queries'][0]['value'])) ? $value['social_queries'][0]['value'] : '',
-    );
 
     if (empty($value['social_queries'][0]['value'])) {
       $widget['social_queries'][0]['value']['#attributes'] = array(
@@ -137,7 +139,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         'Option 3',
       ),
     );
-
   }
 
   //add a submit handler to serialise the submitted data
@@ -147,13 +148,59 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
   return $element;
 }
 
-function stackla_field_ajax_social_callback($form,&$form_state) {
-  return $form['social_queries'];
+/**
+ * Build social form elements from existing data.
+ * @param array $values
+ */
+function stackla_field_social_elements($values) {
+  $social_type_options = array(
+    '0' => t('Select Source...'),
+    'twitter_user' => t('Twitter user'),
+    'instagram_hashtag' => t('Instagram hashtag'),
+  );
+  $elements = array();
+  foreach ($values['social_queries'] as $key => $query) {
+    if ($values['social_queries'][$key]['type'] != 0) {
+      $elements[$key]['type'] = array(
+        '#type' => 'select',
+        '#options' => $social_type_options,
+        '#default_value' => (!empty($values['social_queries'][$key]['type'])) ? $value['social_queries'][$key]['type'] : 0,
+      );
+    }
+  }
+  $widget['social_queries'][$key+1]['type'] = array(
+      '#type' => 'select',
+      '#options' => $social_type_options,
+      '#default_value' => 0,
+      '#ajax' => array(
+        'callback' => 'stackla_field_ajax_social_callback',
+        'wrapper' => 'st-sq-fieldset',
+        'method' => 'replace',
+        'effect' => 'fade',
+      ),
+    );
+  return $elements;
+}
+
+function stackla_field_ajax_social_callback($form, &$form_state) {
+  // gets an array of the path of the triggering element.
+  // gets an array of the path of the triggering element.
+  $parents = $form_state['triggering_element']['#array_parents'];
+
+  // removes the triggering element name.
+  array_pop($parents);
+
+  array_pop($parents);
+
+  // turns the array into a path on $form - i.e. $form['field_name']['und'][0]['your_element_name'];
+  $element = drupal_array_get_nested_value($form, $parents);
+  return $element;
 }
 
 function stackla_field_field_widget_submit($form, &$form_state) {
+
   //serialise all gathered data to store
-  dpm($form_state);
+  dpm($form_state, 'ON SUBMIT');
 }
 
 /**
