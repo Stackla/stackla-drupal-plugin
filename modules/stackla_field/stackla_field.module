@@ -35,6 +35,8 @@ function stackla_field_field_widget_info() {
  * Implements hook_field_widget_form().
  */
 function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+
+  dpm($form_state,'form_state');
   $value = isset($items[$delta]['widget_data']) ? unserialize($items[$delta]['widget_data']) : array();
   $widget = $element;
   $widget['#delta'] = $delta;
@@ -101,10 +103,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       '#value' => t('Remove'),
     );
 
-    $widget['social_queries']['add'] = array(
-      '#type' => 'button',
-      '#value' => t('Add new'),
-    );
 
     $widget['filter_menu'] = array(
       '#type' => 'fieldset',
@@ -130,6 +128,16 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       '#prefix' => '<div id="st-lf-fieldset">',
       '#suffix' => '</div>'
     );
+
+    $widget['look_and_feel']['look_options'] = array(
+      '#type' => 'radios',
+      '#options' => array(
+        'Option 1',
+        'Option 2',
+        'Option 3',
+      ),
+    );
+
   }
 
   //add a submit handler to serialise the submitted data
@@ -161,15 +169,6 @@ function stackla_field_field_is_empty($item, $field) {
 
 /**
  * Implements hook_field_validate().
- *
- * This hook gives us a chance to validate content that's in our
- * field. We're really only interested in the $items parameter, since
- * it holds arrays representing content in the field we've defined.
- * We want to verify that the items only contain RGB hex values like
- * this: #RRGGBB. If the item validates, we do nothing. If it doesn't
- * validate, we add our own error notification to the $errors parameter.
- *
- * @see field_example_field_widget_error()
  */
 function stackla_field_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
   foreach ($items as $delta => $item) {
