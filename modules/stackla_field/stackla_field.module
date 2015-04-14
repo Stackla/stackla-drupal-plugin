@@ -81,17 +81,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       $social_elements = stackla_field_social_elements($value);
     }
     $widget['social_queries'] += $social_elements;
-    $widget['social_queries'][count($social_elements)]['type'] = array(
-      '#type' => 'select',
-      '#options' => $social_type_options,
-      '#default_value' => 0,
-      '#ajax' => array(
-        'callback' => 'stackla_field_ajax_social_callback',
-        'wrapper' => 'st-sq-fieldset',
-        'method' => 'replace',
-        'effect' => 'fade',
-      ),
-    );
 
 
     if (empty($value['social_queries'][0]['value'])) {
@@ -160,15 +149,19 @@ function stackla_field_social_elements($values) {
   );
   $elements = array();
   foreach ($values['social_queries'] as $key => $query) {
-    if ($values['social_queries'][$key]['type'] != 0) {
+    if (!empty($query['type']) && $query['type'] != 0) {
       $elements[$key]['type'] = array(
         '#type' => 'select',
         '#options' => $social_type_options,
         '#default_value' => (!empty($values['social_queries'][$key]['type'])) ? $value['social_queries'][$key]['type'] : 0,
       );
+      $elements[$key]['name'] = array(
+        '#type' => 'textfield',
+        '#default_value' => (!empty($values['social_queries'][$key]['name'])) ? $value['social_queries'][$key]['name'] : '',
+      );
     }
   }
-  $widget['social_queries'][$key+1]['type'] = array(
+  $elements[$key+1]['type'] = array(
       '#type' => 'select',
       '#options' => $social_type_options,
       '#default_value' => 0,
