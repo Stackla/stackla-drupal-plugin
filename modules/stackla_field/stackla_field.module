@@ -7,17 +7,16 @@
 /**
  * Implements hook_field_info().
  */
-function stacka_field_field_info() {
-  return array (
+function stackla_field_field_info() {
+  $data = array (
     'stackla_field' => array (
-      'label' => t('My Field'),
-      'description' => t('Stackla Widget.'),
-      'settings' => array (),
-      'instance_settings' => array (),
+      'label' => t('Stackla Widget'),
+      'description' => t('Stackla Widget'),
       'default_widget' => 'stackla_field_widget',
-      'default_formatter' => 'states_field_widget_formatter',
+      'default_formatter' => 'stackla_field_widget_formatter',
     ),
   );
+  return $data;
 }
 
 /**
@@ -26,8 +25,8 @@ function stacka_field_field_info() {
 function stackla_field_field_widget_info() {
   return array(
     'stackla_field_widget' => array(
-      'label' => t('Stacka Field widget'),
-      'field types' => array('stacka_field'),
+      'label' => t('Stackla Field widget'),
+      'field types' => array('stackla_field'),
     ),
   );
 }
@@ -48,9 +47,17 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       );
   }
 
+  //add a submit handler to serialise the submitted data
+  $form['#submit'][] = 'stackla_field_field_widget_submit';
+
   $element['widget_data'] = $widget;
   return $element;
 
+}
+
+function stackla_field_field_widget_submit($form,&$form_state) {
+  //serialise all gathered data to store
+  dpm($form_state);
 }
 
 /**
@@ -91,9 +98,43 @@ function stackla_field_field_validate($entity_type, $entity, $field, $instance, 
 function stackla_field_field_formatter_info() {
   return array(
     // This formatter just displays the hex value in the color indicated.
-    'stacka_field_widget' => array(
+    'stackla_field_widget_formatter' => array(
       'label' => t('Stackla widget'),
       'field types' => array('stackla_field'),
     ),
   );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function stackla_field_theme($existing, $type, $theme, $path) {
+  return array(
+    'stackla_field' => array(
+      'variables' => array(),
+      'template' => 'templates/stackla_field'
+    ),
+  );
+}
+
+
+/**
+ * Implements hook_field_formatter_view().
+ *
+ */
+function stackla_field_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  switch ($display['type']) {
+    // This formatter simply outputs the field as text and with a color.
+    case 'stackla_field':
+      foreach ($items as $delta => $item) {
+        $element[$delta] = array(
+          '#theme' => 'stackla_field',
+        );
+      }
+      break;
+  }
+
+  return $element;
 }

@@ -1,4 +1,4 @@
-name = Stackla Base
+name = Stackla Field
 description = Add a stackla widget to content via a field.
 dependencies[] = stackla
 package = Stackla

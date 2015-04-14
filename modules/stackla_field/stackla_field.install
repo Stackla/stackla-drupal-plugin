@@ -4,7 +4,10 @@
  * @file: Stackla field install functions.
  */
 
-function my_module_field_schema($field) {
+/**
+* Implements hook_field_schema().
+*/
+function stackla_field_field_schema($field) {
   $schema = array();
   $schema['columns']['widget_data'] = array (
       'type' => 'blob',
