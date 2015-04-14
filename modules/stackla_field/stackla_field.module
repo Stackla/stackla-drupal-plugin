@@ -8,8 +8,8 @@
  * Implements hook_field_info().
  */
 function stackla_field_field_info() {
-  $data = array (
-    'stackla_field' => array (
+  $data = array(
+    'stackla_field' => array(
       'label' => t('Stackla Widget'),
       'description' => t('Stackla Widget'),
       'default_widget' => 'stackla_field_widget',
@@ -36,15 +36,100 @@ function stackla_field_field_widget_info() {
  */
 function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   $value = isset($items[$delta]['widget_data']) ? unserialize($items[$delta]['widget_data']) : array();
-
   $widget = $element;
   $widget['#delta'] = $delta;
 
-  if($instance['widget']['type'] == 'stackla_field_widget') {
+  if ($instance['widget']['type'] == 'stackla_field_widget') {
+
+    // Make this a fieldset with the three text fields.
     $widget += array(
-        '#type' => 'textfield',
-        '#default_value' => (!empty($value['name'])) ? $value['name'] : '',
+      '#type' => 'fieldset',
+      '#element_validate' => array('stackla_field_element_validate'),
+      // #delta is set so that the validation function will be able
+      // to access external value information which otherwise would be
+      // unavailable.
+      '#delta' => $delta,
+    );
+
+
+    $widget['name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Name'),
+      '#default_value' => (!empty($value['name'])) ? $value['name'] : '',
+    );
+
+    $widget['social_queries'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'Social Queries',
+      '#collapsed' => FALSE,
+      '#collapsible' => FALSE,
+      '#prefix' => '<div id="st-sq-fieldset">',
+      '#suffix' => '</div>'
+    );
+
+    $social_type_options = array(
+      '0' => t('Select Source...'),
+      'twitter_user' => t('Twitter user'),
+      'instagram_hashtag' => t('Instagram hashtag'),
+    );
+
+    $widget['social_queries'][0]['type'] = array(
+      '#type' => 'select',
+      '#options' => $social_type_options,
+      '#default_value' => (!empty($value['social_queries'][0]['type'])) ? $value['social_queries'][0]['type'] : 0,
+      '#ajax' => array(
+        'callback' => 'stackla_field_ajax_social_callback',
+        'wrapper' => 'st-sq-fieldset',
+        'method' => 'replace',
+        'effect' => 'fade',
+      ),
+    );
+
+    $widget['social_queries'][0]['value'] = array(
+      '#type' => 'textfield',
+      '#default_value' => (!empty($value['social_queries'][0]['value'])) ? $value['social_queries'][0]['value'] : '',
+    );
+
+    if (empty($value['social_queries'][0]['value'])) {
+      $widget['social_queries'][0]['value']['#attributes'] = array(
+        'placeholder' => t('Enter value'),
       );
+    }
+
+    $widget['social_queries'][0]['remove'] = array(
+      '#type' => 'button',
+      '#value' => t('Remove'),
+    );
+
+    $widget['social_queries']['add'] = array(
+      '#type' => 'button',
+      '#value' => t('Add new'),
+    );
+
+    $widget['filter_menu'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'Filter Menu',
+      '#collapsed' => FALSE,
+      '#collapsible' => FALSE,
+      '#prefix' => '<div id="st-fm-fieldset">',
+      '#suffix' => '</div>'
+    );
+
+    $widget['filter_menu'][0]['name'] = array(
+      '#type' => 'textfield',
+      '#attributes' => array(
+        'placeholder' => t('Add new menu item'),
+      ),
+    );
+
+    $widget['look_and_feel'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'Look and Feel',
+      '#collapsed' => FALSE,
+      '#collapsible' => FALSE,
+      '#prefix' => '<div id="st-lf-fieldset">',
+      '#suffix' => '</div>'
+    );
   }
 
   //add a submit handler to serialise the submitted data
@@ -52,10 +137,13 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
 
   $element['widget_data'] = $widget;
   return $element;
-
 }
 
-function stackla_field_field_widget_submit($form,&$form_state) {
+function stackla_field_ajax_social_callback($form,&$form_state) {
+  return $form['social_queries'];
+}
+
+function stackla_field_field_widget_submit($form, &$form_state) {
   //serialise all gathered data to store
   dpm($form_state);
 }
@@ -70,7 +158,6 @@ function stackla_field_field_widget_submit($form,&$form_state) {
 function stackla_field_field_is_empty($item, $field) {
   return empty($item['widget_data']);
 }
-
 
 /**
  * Implements hook_field_validate().
@@ -89,6 +176,20 @@ function stackla_field_field_validate($entity_type, $entity, $field, $instance, 
     if (!empty($item['widget_data'])) {
       //@todo: validate field data.
     }
+  }
+}
+
+/**
+ * Take all the values from the widget form and serialise them to store.
+ */
+function stackla_field_element_validate($element, &$form_state) {
+  $delta = $element['#delta'];
+  $field = $form_state['field'][$element['#field_name']][$element['#language']]['field'];
+  $field_name = $field['field_name'];
+  if (isset($form_state['values'][$field_name][$element['#language']][$delta]['widget_data'])) {
+    $values = $form_state['values'][$field_name][$element['#language']][$delta]['widget_data'];
+    $value = serialize($values);
+    form_set_value($element, $value, $form_state);
   }
 }
 
@@ -117,7 +218,6 @@ function stackla_field_theme($existing, $type, $theme, $path) {
   );
 }
 
-
 /**
  * Implements hook_field_formatter_view().
  *
@@ -126,8 +226,8 @@ function stackla_field_field_formatter_view($entity_type, $entity, $field, $inst
   $element = array();
 
   switch ($display['type']) {
-    // This formatter simply outputs the field as text and with a color.
-    case 'stackla_field':
+    // Stackla field outputter.
+    case 'stackla_field_widget_formatter':
       foreach ($items as $delta => $item) {
         $element[$delta] = array(
           '#theme' => 'stackla_field',

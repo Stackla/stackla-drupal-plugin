@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file: STackla Field template
+ * @file: Stackla Field template
  *
  * Available variables:
  *
