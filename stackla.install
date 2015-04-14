@@ -1,0 +1,48 @@
+<?php
+
+/**
+ * @file: Stackla Base install functions.
+ */
+
+/**
+* Implements hook_requirements().
+*/
+function stackla_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+
+  if($phase == 'runtime') {
+    $requirements['stackla_library'] = array(
+        'title' => $t('Stackla SDK library'),
+        'description' => $t('Download and extract the Stackla SDK to your libraries directory'),
+    );
+    if($library = libraries_detect('stackla') && !empty($library['installed'])) {
+      $requirements['stackla_library'] += array(
+        'value' => $t('Installed'),
+        'severity' => REQUIREMENT_OK,
+      );
+    }
+    else {
+      $requirements['stackla_library'] += array(
+        'value' => $t('Not installed'),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+  }
+  return $requirements;
+}
+
+/**
+ * Implements hook_install().
+ */
+function stackla_install() {
+  $t = get_t();
+  drupal_set_message($t('Stackla module installed, you must download and extract the Stackla SDK to your libraries folder. See the module README for more information.'), 'status');
+}
+
+/**
+* Implements hook_uninstall().
+ */
+function stackla_uninstall() {
+  db_query("DELETE FROM {variable} WHERE name LIKE 'stackla_%'");
+}

@@ -1,0 +1,60 @@
+<?php
+
+/**
+ * @file: Stackla Base module functions.
+ */
+
+/**
+ * Implements hook_libraries_info().
+ */
+function stackla_libraries_info() {
+
+  $libraries['stackla'] = array(
+    'name' => 'Stackla',
+    'vendor url' => 'http://stackla.com/',
+    'download url' => 'http://stackla.com/api',
+    'version arguments' => array(
+      'file' => 'stackla.php', // Could be any file with version info
+      'pattern' => '/Version (\d+)/',
+      'lines' => 5,
+    ),
+    'files' => array(
+      'php' => array('stackla.php'), //this can be a path to the file location like array('lib/simple.js')
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function stackla_menu() {
+  $items = array();
+
+  $items['admin/config/services/stackla'] = array(
+    'title' => 'Stackla',
+    'description' => 'Configure Stackla integration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('stackla_settings_form'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer stackla'),
+    'file' => 'stackla.admin.inc',
+    'weight' => 0,
+    'type' => MENU_NORMAL_ITEM
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function stackla_permission() {
+  return array(
+    'administer stackla' => array(
+      'title' => t('Administer stackla'),
+      'description' => t('Configure stackla module'),
+    ),
+  );
+}

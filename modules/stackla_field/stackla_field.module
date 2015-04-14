@@ -1,0 +1,99 @@
+<?php
+
+/**
+ * @file: Stackla Field functions.
+ */
+
+/**
+ * Implements hook_field_info().
+ */
+function stacka_field_field_info() {
+  return array (
+    'stackla_field' => array (
+      'label' => t('My Field'),
+      'description' => t('Stackla Widget.'),
+      'settings' => array (),
+      'instance_settings' => array (),
+      'default_widget' => 'stackla_field_widget',
+      'default_formatter' => 'states_field_widget_formatter',
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function stackla_field_field_widget_info() {
+  return array(
+    'stackla_field_widget' => array(
+      'label' => t('Stacka Field widget'),
+      'field types' => array('stacka_field'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $value = isset($items[$delta]['widget_data']) ? unserialize($items[$delta]['widget_data']) : array();
+
+  $widget = $element;
+  $widget['#delta'] = $delta;
+
+  if($instance['widget']['type'] == 'stackla_field_widget') {
+    $widget += array(
+        '#type' => 'textfield',
+        '#default_value' => (!empty($value['name'])) ? $value['name'] : '',
+      );
+  }
+
+  $element['widget_data'] = $widget;
+  return $element;
+
+}
+
+/**
+ * Implements hook_field_is_empty().
+ *
+ * hook_field_is_emtpy() is where Drupal asks us if this field is empty.
+ * Return TRUE if it does not contain data, FALSE if it does. This lets
+ * the form API flag an error when required fields are empty.
+ */
+function stackla_field_field_is_empty($item, $field) {
+  return empty($item['widget_data']);
+}
+
+
+/**
+ * Implements hook_field_validate().
+ *
+ * This hook gives us a chance to validate content that's in our
+ * field. We're really only interested in the $items parameter, since
+ * it holds arrays representing content in the field we've defined.
+ * We want to verify that the items only contain RGB hex values like
+ * this: #RRGGBB. If the item validates, we do nothing. If it doesn't
+ * validate, we add our own error notification to the $errors parameter.
+ *
+ * @see field_example_field_widget_error()
+ */
+function stackla_field_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
+  foreach ($items as $delta => $item) {
+    if (!empty($item['widget_data'])) {
+      //@todo: validate field data.
+    }
+  }
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function stackla_field_field_formatter_info() {
+  return array(
+    // This formatter just displays the hex value in the color indicated.
+    'stacka_field_widget' => array(
+      'label' => t('Stackla widget'),
+      'field types' => array('stackla_field'),
+    ),
+  );
+}

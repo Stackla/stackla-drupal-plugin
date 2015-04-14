@@ -1,0 +1,6 @@
+name = Stackla Base
+description = Add a stackla widget to content via a field.
+dependencies[] = stackla
+package = Stackla
+core = 7.x
+files[] = tests/stackla_field.test

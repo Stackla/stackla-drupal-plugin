@@ -1,1 +1,0 @@
-# stackla-drupal-plugin
