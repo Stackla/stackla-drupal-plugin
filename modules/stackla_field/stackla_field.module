@@ -71,9 +71,11 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
     if (!empty($form_state['values'][$field_name]['und'][$delta]['widget_data'])) {
       $submitted_data = unserialize($form_state['values'][$field_name]['und'][$delta]['widget_data']);
       $social_elements = stackla_field_social_elements($submitted_data, $form_state);
+      $filter_elements = stackla_field_filters($submitted_data, $form_state);
     }
     else {
       $social_elements = stackla_field_social_elements($value, $form_state);
+      $filter_elements = stackla_field_filters($value, $form_state);
     }
     $widget['social_queries'] += $social_elements;
 
@@ -86,12 +88,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       '#suffix' => '</div>'
     );
 
-    $widget['filter_menu'][0]['name'] = array(
-      '#type' => 'textfield',
-      '#attributes' => array(
-        'placeholder' => t('Add new menu item'),
-      ),
-    );
+    $widget['filter_menu'] += $filter_elements;
 
     $widget['look_and_feel'] = array(
       '#type' => 'fieldset',
@@ -110,7 +107,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         'Option 3',
       ),
     );
-    $e = 0;
   }
 
   //add a submit handler to serialise the submitted data
@@ -118,6 +114,92 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
 
   $element['widget_data'] = $widget;
   return $element;
+}
+
+function stackla_field_filters($values, $form_state) {
+  $elements = array();
+
+  $highest_key = 0;
+
+  foreach ($values['filter_menu'] as $key => $filter) {
+    if ($key > $highest_key) {
+      $highest_key = $key;
+    }
+    $e = 0;
+    if (!empty($filter['title'])) {
+      $elements += stackla_field_filter_element($key, $filter);
+    }
+  }
+  $e = 0;
+
+  if (empty($elements[$highest_key]['title']['#default_value'])) {
+    $highest_key ++;
+    $elements += stackla_field_filter_element($highest_key, array());
+  }
+
+  $highest_key ++;
+  $elements[$highest_key]['add_new'] = array(
+    '#type' => 'button',
+    '#value' => t('Add new filter'),
+    '#name' => 'filter_add_new',
+    '#ajax' => array(
+      'callback' => 'stackla_field_ajax_social_callback',
+      'wrapper' => 'st-fm-fieldset',
+      'method' => 'replace',
+      'effect' => 'fade',
+    ),
+  );
+
+  return $elements;
+}
+
+function stackla_field_filter_element($key, $filter) {
+  $elements = array();
+  //title
+  $elements[$key]['title'] = array(
+    '#title' => t('Title'),
+    '#type' => 'textfield',
+    '#default_value' => (!empty($filter['title'])) ? $filter['title'] : '',
+  );
+
+
+  //sort by
+  $elements[$key]['sort_by'] = array(
+    '#type' => 'select',
+    '#options' => array(
+      'date_latest' => t('Date - Latest first'),
+      'another_option' => t('Another option'),
+    ),
+    '#default_value' => (!empty($filter['sort_by'])) ? $filter['sort_by'] : '',
+  );
+
+  // show media
+  $elements[$key]['show_media'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Show Media'),
+    '#options' => array(
+      'text' => t('Text only'),
+      'images' => t('Images'),
+      'video' => t('Video'),
+    ),
+    '#default_value' => (!empty($filter['show_media'])) ? $filter['show_media'] : array(),
+  );
+
+  // networks
+  $elements[$key]['networks'] = array(
+    '#title' => t('Networks'),
+    '#type' => 'checkboxes',
+    '#options' => array(
+      'twitter' => t('Twitter'),
+      'instagram' => t('Instagram'),
+      'facebook' => t('Facebook'),
+      'google_plus' => t('Google+'),
+      'youtube' => t('YouTube'),
+    ),
+    '#default_value' => (!empty($filter['networks'])) ? $filter['networks'] : array(),
+  );
+
+  return $elements;
 }
 
 /**
@@ -204,6 +286,10 @@ function stackla_field_social_elements($values, $form_state) {
   return $elements;
 }
 
+function stackla_field_ajax_filter_callback($form, &$form_state) {
+
+}
+
 function stackla_field_ajax_social_callback($form, &$form_state) {
   // gets an array of the path of the triggering element.
   // gets an array of the path of the triggering element.
@@ -279,7 +365,9 @@ function stackla_field_field_formatter_info() {
 function stackla_field_theme($existing, $type, $theme, $path) {
   return array(
     'stackla_field' => array(
-      'variables' => array(),
+      'variables' => array(
+        'filters' => array(),
+      ),
       'template' => 'templates/stackla_field'
     ),
   );
@@ -296,8 +384,11 @@ function stackla_field_field_formatter_view($entity_type, $entity, $field, $inst
     // Stackla field outputter.
     case 'stackla_field_widget_formatter':
       foreach ($items as $delta => $item) {
+      $data = unserialize($item['widget_data']);
+      //dpm($data);
         $element[$delta] = array(
           '#theme' => 'stackla_field',
+          '#filters' => $data['filter_menu'],
         );
       }
       break;
