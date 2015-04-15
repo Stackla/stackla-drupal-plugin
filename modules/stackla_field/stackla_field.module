@@ -36,10 +36,6 @@ function stackla_field_field_widget_info() {
  */
 function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   $value = isset($items[$delta]['widget_data']) ? unserialize($items[$delta]['widget_data']) : array();
-  dpm($value, 'unserialised value');
-  dpm($form_state, 'form state');
-  dpm($field, 'field');
-  dpm($delta, 'delta');
   $widget = $element;
   $widget['#delta'] = $delta;
 
@@ -74,26 +70,12 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
     $field_name = $field['field_name'];
     if (!empty($form_state['values'][$field_name]['und'][$delta]['widget_data'])) {
       $submitted_data = unserialize($form_state['values'][$field_name]['und'][$delta]['widget_data']);
-      dpm($submitted_data, 'data');
       $social_elements = stackla_field_social_elements($submitted_data);
     }
     else {
       $social_elements = stackla_field_social_elements($value);
     }
     $widget['social_queries'] += $social_elements;
-
-
-    if (empty($value['social_queries'][0]['value'])) {
-      $widget['social_queries'][0]['value']['#attributes'] = array(
-        'placeholder' => t('Enter value'),
-      );
-    }
-
-    $widget['social_queries'][0]['remove'] = array(
-      '#type' => 'button',
-      '#value' => t('Remove'),
-    );
-
 
     $widget['filter_menu'] = array(
       '#type' => 'fieldset',
@@ -128,6 +110,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         'Option 3',
       ),
     );
+    $e = 0;
   }
 
   //add a submit handler to serialise the submitted data
@@ -143,35 +126,61 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
  */
 function stackla_field_social_elements($values) {
   $social_type_options = array(
-    '0' => t('Select Source...'),
     'twitter_user' => t('Twitter user'),
     'instagram_hashtag' => t('Instagram hashtag'),
   );
+  $initial_social_options = array(
+    '0' => t('Select Source...'),
+  );
+  $initial_social_options += $social_type_options;
   $elements = array();
   foreach ($values['social_queries'] as $key => $query) {
-    if (!empty($query['type']) && $query['type'] != 0) {
+    $e = 0;
+    if (!empty($query['type']) && $query['type'] != '0') {
+      $e = 0;
       $elements[$key]['type'] = array(
         '#type' => 'select',
-        '#options' => $social_type_options,
-        '#default_value' => (!empty($values['social_queries'][$key]['type'])) ? $value['social_queries'][$key]['type'] : 0,
+        '#options' => $initial_social_options,
+        '#default_value' => (!empty($query['type'])) ? $query['type'] : 0,
+        '#ajax' => array(
+          'callback' => 'stackla_field_ajax_social_callback',
+          'wrapper' => 'st-sq-fieldset',
+          'method' => 'replace',
+          'effect' => 'fade',
+        ),
       );
-      $elements[$key]['name'] = array(
+      $elements[$key]['value'] = array(
         '#type' => 'textfield',
-        '#default_value' => (!empty($values['social_queries'][$key]['name'])) ? $value['social_queries'][$key]['name'] : '',
+        '#default_value' => (!empty($query['value'])) ? $query['value'] : '',
+      );
+      if (empty($query['value'])) {
+        $elements[$key]['value']['#attributes'] = array(
+          'placeholder' => t('Enter value'),
+        );
+      }
+      $elements[$key]['remove'] = array(
+        '#type' => 'button',
+        '#value' => t('Remove'),
       );
     }
   }
-  $elements[$key+1]['type'] = array(
+  $e = 0;
+
+  $new_select = array(
+    'type' => array(
       '#type' => 'select',
-      '#options' => $social_type_options,
+      '#options' => $initial_social_options,
       '#default_value' => 0,
+      //'#name' => 'stackla_social_new',
       '#ajax' => array(
         'callback' => 'stackla_field_ajax_social_callback',
         'wrapper' => 'st-sq-fieldset',
         'method' => 'replace',
         'effect' => 'fade',
       ),
-    );
+    ),
+  );
+  $elements[] = $new_select;
   return $elements;
 }
 
@@ -193,7 +202,6 @@ function stackla_field_ajax_social_callback($form, &$form_state) {
 function stackla_field_field_widget_submit($form, &$form_state) {
 
   //serialise all gathered data to store
-  dpm($form_state, 'ON SUBMIT');
 }
 
 /**
