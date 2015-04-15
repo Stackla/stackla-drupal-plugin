@@ -70,10 +70,10 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
     $field_name = $field['field_name'];
     if (!empty($form_state['values'][$field_name]['und'][$delta]['widget_data'])) {
       $submitted_data = unserialize($form_state['values'][$field_name]['und'][$delta]['widget_data']);
-      $social_elements = stackla_field_social_elements($submitted_data);
+      $social_elements = stackla_field_social_elements($submitted_data, $form_state);
     }
     else {
-      $social_elements = stackla_field_social_elements($value);
+      $social_elements = stackla_field_social_elements($value, $form_state);
     }
     $widget['social_queries'] += $social_elements;
 
@@ -124,7 +124,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
  * Build social form elements from existing data.
  * @param array $values
  */
-function stackla_field_social_elements($values) {
+function stackla_field_social_elements($values, $form_state) {
   $social_type_options = array(
     'twitter_user' => t('Twitter user'),
     'instagram_hashtag' => t('Instagram hashtag'),
@@ -133,38 +133,58 @@ function stackla_field_social_elements($values) {
     '0' => t('Select Source...'),
   );
   $initial_social_options += $social_type_options;
-  $elements = array();
-  foreach ($values['social_queries'] as $key => $query) {
-    $e = 0;
-    if (!empty($query['type']) && $query['type'] != '0') {
-      $e = 0;
-      $elements[$key]['type'] = array(
-        '#type' => 'select',
-        '#options' => $initial_social_options,
-        '#default_value' => (!empty($query['type'])) ? $query['type'] : 0,
-        '#ajax' => array(
-          'callback' => 'stackla_field_ajax_social_callback',
-          'wrapper' => 'st-sq-fieldset',
-          'method' => 'replace',
-          'effect' => 'fade',
-        ),
-      );
-      $elements[$key]['value'] = array(
-        '#type' => 'textfield',
-        '#default_value' => (!empty($query['value'])) ? $query['value'] : '',
-      );
-      if (empty($query['value'])) {
-        $elements[$key]['value']['#attributes'] = array(
-          'placeholder' => t('Enter value'),
-        );
-      }
-      $elements[$key]['remove'] = array(
-        '#type' => 'button',
-        '#value' => t('Remove'),
-      );
+
+  // Check if a 'remove' button has been clicked
+  $remove_index = 'empty';
+  if (!empty($form_state['clicked_button'])) {
+    $name_elements = explode('-', $form_state['clicked_button']['#name']);
+    if ($name_elements[0] == 'social') {
+      $remove_index = intval($name_elements[2]);
     }
   }
-  $e = 0;
+
+  $elements = array();
+  $highest_key = 0;
+  foreach ($values['social_queries'] as $key => $query) {
+    if ($key > $highest_key) {
+      $highest_key = $key;
+    }
+    if (!empty($query['type']) && $query['type'] != '0') {
+      if ($key !== $remove_index) {
+        $elements[$key]['type'] = array(
+          '#type' => 'select',
+          '#options' => $social_type_options,
+          '#default_value' => (!empty($query['type'])) ? $query['type'] : 0,
+          '#ajax' => array(
+            'callback' => 'stackla_field_ajax_social_callback',
+            'wrapper' => 'st-sq-fieldset',
+            'method' => 'replace',
+            'effect' => 'fade',
+          ),
+        );
+        $elements[$key]['value'] = array(
+          '#type' => 'textfield',
+          '#default_value' => (!empty($query['value'])) ? $query['value'] : '',
+        );
+        if (empty($query['value'])) {
+          $elements[$key]['value']['#attributes'] = array(
+            'placeholder' => t('Enter value'),
+          );
+        }
+        $elements[$key]['remove'] = array(
+          '#type' => 'button',
+          '#value' => t('Remove'),
+          '#name' => 'social-remove-' . $key,
+          '#ajax' => array(
+            'callback' => 'stackla_field_ajax_social_callback',
+            'wrapper' => 'st-sq-fieldset',
+            'method' => 'replace',
+            'effect' => 'fade',
+          ),
+        );
+      }
+    }
+  }
 
   $new_select = array(
     'type' => array(
@@ -180,7 +200,7 @@ function stackla_field_social_elements($values) {
       ),
     ),
   );
-  $elements[] = $new_select;
+  $elements[$highest_key + 1] = $new_select;
   return $elements;
 }
 
