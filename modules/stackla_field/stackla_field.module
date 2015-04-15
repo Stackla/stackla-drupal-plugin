@@ -121,16 +121,16 @@ function stackla_field_filters($values, $form_state) {
 
   $highest_key = 0;
 
-  foreach ($values['filter_menu'] as $key => $filter) {
-    if ($key > $highest_key) {
-      $highest_key = $key;
-    }
-    $e = 0;
-    if (!empty($filter['title'])) {
-      $elements += stackla_field_filter_element($key, $filter);
+  if (!empty($values['filter_menu'])) {
+    foreach ($values['filter_menu'] as $key => $filter) {
+      if ($key > $highest_key) {
+        $highest_key = $key;
+      }
+      if (!empty($filter['title'])) {
+        $elements += stackla_field_filter_element($key, $filter);
+      }
     }
   }
-  $e = 0;
 
   if (empty($elements[$highest_key]['title']['#default_value'])) {
     $highest_key ++;
@@ -227,43 +227,45 @@ function stackla_field_social_elements($values, $form_state) {
 
   $elements = array();
   $highest_key = 0;
-  foreach ($values['social_queries'] as $key => $query) {
-    if ($key > $highest_key) {
-      $highest_key = $key;
-    }
-    if (!empty($query['type']) && $query['type'] != '0') {
-      if ($key !== $remove_index) {
-        $elements[$key]['type'] = array(
-          '#type' => 'select',
-          '#options' => $social_type_options,
-          '#default_value' => (!empty($query['type'])) ? $query['type'] : 0,
-          '#ajax' => array(
-            'callback' => 'stackla_field_ajax_social_callback',
-            'wrapper' => 'st-sq-fieldset',
-            'method' => 'replace',
-            'effect' => 'fade',
-          ),
-        );
-        $elements[$key]['value'] = array(
-          '#type' => 'textfield',
-          '#default_value' => (!empty($query['value'])) ? $query['value'] : '',
-        );
-        if (empty($query['value'])) {
-          $elements[$key]['value']['#attributes'] = array(
-            'placeholder' => t('Enter value'),
+  if (!empty($values['social_queries'])) {
+    foreach ($values['social_queries'] as $key => $query) {
+      if ($key > $highest_key) {
+        $highest_key = $key;
+      }
+      if (!empty($query['type']) && $query['type'] != '0') {
+        if ($key !== $remove_index) {
+          $elements[$key]['type'] = array(
+            '#type' => 'select',
+            '#options' => $social_type_options,
+            '#default_value' => (!empty($query['type'])) ? $query['type'] : 0,
+            '#ajax' => array(
+              'callback' => 'stackla_field_ajax_social_callback',
+              'wrapper' => 'st-sq-fieldset',
+              'method' => 'replace',
+              'effect' => 'fade',
+            ),
+          );
+          $elements[$key]['value'] = array(
+            '#type' => 'textfield',
+            '#default_value' => (!empty($query['value'])) ? $query['value'] : '',
+          );
+          if (empty($query['value'])) {
+            $elements[$key]['value']['#attributes'] = array(
+              'placeholder' => t('Enter value'),
+            );
+          }
+          $elements[$key]['remove'] = array(
+            '#type' => 'button',
+            '#value' => t('Remove'),
+            '#name' => 'social-remove-' . $key,
+            '#ajax' => array(
+              'callback' => 'stackla_field_ajax_social_callback',
+              'wrapper' => 'st-sq-fieldset',
+              'method' => 'replace',
+              'effect' => 'fade',
+            ),
           );
         }
-        $elements[$key]['remove'] = array(
-          '#type' => 'button',
-          '#value' => t('Remove'),
-          '#name' => 'social-remove-' . $key,
-          '#ajax' => array(
-            'callback' => 'stackla_field_ajax_social_callback',
-            'wrapper' => 'st-sq-fieldset',
-            'method' => 'replace',
-            'effect' => 'fade',
-          ),
-        );
       }
     }
   }
@@ -384,8 +386,8 @@ function stackla_field_field_formatter_view($entity_type, $entity, $field, $inst
     // Stackla field outputter.
     case 'stackla_field_widget_formatter':
       foreach ($items as $delta => $item) {
-      $data = unserialize($item['widget_data']);
-      //dpm($data);
+        $data = unserialize($item['widget_data']);
+        //dpm($data);
         $element[$delta] = array(
           '#theme' => 'stackla_field',
           '#filters' => $data['filter_menu'],
