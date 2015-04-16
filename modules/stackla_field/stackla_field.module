@@ -116,6 +116,14 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
   return $element;
 }
 
+/**
+ * Generate the filters widget form elements.
+ * @param array $values
+ *  the existing filter values
+ * @param type $form_state
+ *  The drupal $form_state (with'values' if this is an ajax rebuild).
+ * @return string
+ */
 function stackla_field_filters($values, $form_state) {
   $elements = array();
 
@@ -153,6 +161,15 @@ function stackla_field_filters($values, $form_state) {
   return $elements;
 }
 
+/**
+ *  Generate a single filter form element.
+ * @param string $key
+ *  the delta key
+ * @param array $filter
+ *  existing filter data (for populating default form values).
+ * @return array
+ *  the complete form element render array.
+ */
 function stackla_field_filter_element($key, $filter) {
   $elements = array();
   //title
@@ -207,9 +224,16 @@ function stackla_field_filter_element($key, $filter) {
  * @param array $values
  */
 function stackla_field_social_elements($values, $form_state) {
+
   $social_type_options = array(
-    'twitter_user' => t('Twitter user'),
-    'instagram_hashtag' => t('Instagram hashtag'),
+    'twitter_user' => t('Twitter User'),
+    'twitter_keyword_search' => t('Twitter Keyword Search'),
+    'instagram_hashtag' => t('Instagram Hashtag'),
+    'instagram_user' => t('Instagram User'),
+    'facebook_page' => t('Facebook Page'),
+    'youtube_user' => t('YouTube User'),
+    'youtube_keyword_search' => t('YouTube Keyword Search'),
+    'googleplus_user' => t('Google+ User'),
   );
   $initial_social_options = array(
     '0' => t('Select Source...'),
@@ -308,8 +332,10 @@ function stackla_field_ajax_social_callback($form, &$form_state) {
 }
 
 function stackla_field_field_widget_submit($form, &$form_state) {
-
-  //serialise all gathered data to store
+  //@todo: API interaction should happen here.
+  // submit filter data to API, generate filter ids to store.
+  // submit queries to API, generate query ids to store.
+  // submit widget info to API, generate widget embed code to store. (??)
 }
 
 /**
@@ -368,11 +394,83 @@ function stackla_field_theme($existing, $type, $theme, $path) {
   return array(
     'stackla_field' => array(
       'variables' => array(
-        'filters' => array(),
+        'data' => array(),
+        'field_id' => 0,
       ),
       'template' => 'templates/stackla_field'
     ),
+    'stackla_field_filters' => array(
+      'variables' => array(
+        'filters' => array(),
+        'field_id' => 0,
+      ),
+    ),
   );
+}
+
+/**
+ * Implements hook_preprocess_stackla_field().
+ */
+function stackla_field_preprocess_stackla_field(&$vars) {
+  if(!empty($vars['data']['filter_menu'])) {
+    $vars['filters'] = array(
+      '#theme' => 'stackla_field_filters',
+      '#filters' => $vars['data']['filter_menu'],
+      '#field_id' => $vars['field_id'],
+    );
+  }
+}
+
+/**
+ * Filters list theme function.
+ */
+function theme_stackla_field_filters($variables) {
+  $output = array();
+  $list_class = '.stackla-filter-list.stackla-id-' . $variables['field_id'];
+  $js = 'jQuery(\'' . $list_class . ' a\').click(function(){
+    var filter = $(this).parent();
+    StacklaFluidWidget.changeFilter(window.widgetId, filter.attr(\'data-filter\'));
+});';
+
+
+  $filters = $variables['filters'];
+  $filter_list_elements = array();
+  foreach ($filters as $delta => $filter) {
+    if (!empty($filter['title'])) {
+      // Generate a random filter id for now, replace this with actual data
+      // once the SDK is available.
+      $filter_id = $delta;
+
+      // We don't use l() here because we don't want an href attribute on the
+      // <a> tag.
+      $filter_list_elements[] = sprintf('<a data-filter-id="%s">%s</a>',
+          $filter_id,
+          t($filter['title'])
+          );
+    }
+  }
+  if (!empty($filter_list_elements)) {
+    $output = array(
+      '#theme' => 'item_list',
+      '#items' => $filter_list_elements,
+      '#attributes' => array(
+        'class' => array('stackla-filter-list stackla-id-' . $variables['field_id']), //add id here!
+      ),
+        // add attached js here.
+      '#attached' => array(
+        'js' => array(
+          $js => array(
+            'type' => 'inline',
+            'scope' => 'footer',
+            ),
+         ),
+        'css' => array(drupal_get_path('module', 'stackla_field') . '/css/stackla_field_filters.css'),
+      ),
+    );
+  }
+
+  $rendered_output = drupal_render($output);
+  return $rendered_output;
 }
 
 /**
@@ -380,6 +478,7 @@ function stackla_field_theme($existing, $type, $theme, $path) {
  *
  */
 function stackla_field_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $entity_id = entity_extract_ids($entity_type, $entity);
   $element = array();
 
   switch ($display['type']) {
@@ -390,7 +489,8 @@ function stackla_field_field_formatter_view($entity_type, $entity, $field, $inst
         //dpm($data);
         $element[$delta] = array(
           '#theme' => 'stackla_field',
-          '#filters' => $data['filter_menu'],
+          '#data' => $data,
+          '#field_id' => $entity_id[0] . $delta,
         );
       }
       break;
