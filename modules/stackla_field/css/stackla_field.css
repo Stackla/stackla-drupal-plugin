@@ -1,0 +1,11 @@
+/**
+* @file: Basic CSS for Stackla field output.
+*/
+
+.stackla-widget {
+  padding: 50px;
+  width: 100%;
+  border: 3px solid black;
+  font-weight: bold;
+}
+
