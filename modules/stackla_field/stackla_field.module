@@ -41,7 +41,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
 
   if ($instance['widget']['type'] == 'stackla_field_widget') {
 
-    // Make this a fieldset with the three text fields.
     $widget += array(
       '#type' => 'fieldset',
       '#element_validate' => array('stackla_field_element_validate'),
@@ -49,6 +48,8 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       // to access external value information which otherwise would be
       // unavailable.
       '#delta' => $delta,
+      '#prefix' => '<div id="st-fieldset">',
+      '#suffix' => '</div>',
     );
 
 
@@ -63,8 +64,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       '#title' => 'Social Queries',
       '#collapsed' => FALSE,
       '#collapsible' => FALSE,
-      '#prefix' => '<div id="st-sq-fieldset">',
-      '#suffix' => '</div>'
     );
 
     $field_name = $field['field_name'];
@@ -84,8 +83,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       '#title' => 'Filter Menu',
       '#collapsed' => FALSE,
       '#collapsible' => FALSE,
-      '#prefix' => '<div id="st-fm-fieldset">',
-      '#suffix' => '</div>'
     );
 
     $widget['filter_menu'] += $filter_elements;
@@ -95,8 +92,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       '#title' => 'Look and Feel',
       '#collapsed' => FALSE,
       '#collapsible' => FALSE,
-      '#prefix' => '<div id="st-lf-fieldset">',
-      '#suffix' => '</div>'
+
     );
 
     $widget['look_and_feel']['look_options'] = array(
@@ -129,19 +125,40 @@ function stackla_field_filters($values, $form_state) {
 
   $highest_key = 0;
 
+  // Check if a 'remove' button has been clicked
+  $remove_index = 'empty';
+  if (!empty($form_state['clicked_button'])) {
+    $name_elements = explode('-', $form_state['clicked_button']['#name']);
+    if ($name_elements[0] == 'filter') {
+      $remove_index = intval($name_elements[2]);
+    }
+  }
+
   if (!empty($values['filter_menu'])) {
+    $new_key = 0;
     foreach ($values['filter_menu'] as $key => $filter) {
-      if ($key > $highest_key) {
-        $highest_key = $key;
+      if ($new_key > $highest_key) {
+        $highest_key = $new_key;
       }
-      if (!empty($filter['title'])) {
-        $elements += stackla_field_filter_element($key, $filter);
+      if (!empty($filter['title']) && ($key !== $remove_index)  ) {
+        $elements += stackla_field_filter_element($new_key, $filter);
+        $elements[$new_key]['remove'] = array(
+          '#type' => 'button',
+          '#value' => t('Remove filter'),
+          '#name' => 'filter-remove-' . $new_key,
+          '#ajax' => array(
+            'callback' => 'stackla_field_ajax_social_callback',
+            'wrapper' => 'st-fieldset',
+            'method' => 'replace',
+            'effect' => 'fade',
+          ),
+        );
+        $new_key++;
       }
     }
   }
 
   if (empty($elements[$highest_key]['title']['#default_value'])) {
-    $highest_key ++;
     $elements += stackla_field_filter_element($highest_key, array());
   }
 
@@ -152,7 +169,7 @@ function stackla_field_filters($values, $form_state) {
     '#name' => 'filter_add_new',
     '#ajax' => array(
       'callback' => 'stackla_field_ajax_social_callback',
-      'wrapper' => 'st-fm-fieldset',
+      'wrapper' => 'st-fieldset',
       'method' => 'replace',
       'effect' => 'fade',
     ),
@@ -172,6 +189,11 @@ function stackla_field_filters($values, $form_state) {
  */
 function stackla_field_filter_element($key, $filter) {
   $elements = array();
+
+  $elements[$key] = array(
+    '#type' => 'fieldset',
+  );
+
   //title
   $elements[$key]['title'] = array(
     '#title' => t('Title'),
@@ -258,13 +280,16 @@ function stackla_field_social_elements($values, $form_state) {
       }
       if (!empty($query['type']) && $query['type'] != '0') {
         if ($key !== $remove_index) {
+          $elements[$key] = array(
+            '#type' => 'fieldset',
+          );
           $elements[$key]['type'] = array(
             '#type' => 'select',
             '#options' => $social_type_options,
             '#default_value' => (!empty($query['type'])) ? $query['type'] : 0,
             '#ajax' => array(
               'callback' => 'stackla_field_ajax_social_callback',
-              'wrapper' => 'st-sq-fieldset',
+              'wrapper' => 'st-fieldset',
               'method' => 'replace',
               'effect' => 'fade',
             ),
@@ -284,7 +309,7 @@ function stackla_field_social_elements($values, $form_state) {
             '#name' => 'social-remove-' . $key,
             '#ajax' => array(
               'callback' => 'stackla_field_ajax_social_callback',
-              'wrapper' => 'st-sq-fieldset',
+              'wrapper' => 'st-fieldset',
               'method' => 'replace',
               'effect' => 'fade',
             ),
@@ -302,7 +327,7 @@ function stackla_field_social_elements($values, $form_state) {
       //'#name' => 'stackla_social_new',
       '#ajax' => array(
         'callback' => 'stackla_field_ajax_social_callback',
-        'wrapper' => 'st-sq-fieldset',
+        'wrapper' => 'st-fieldset',
         'method' => 'replace',
         'effect' => 'fade',
       ),
@@ -312,18 +337,14 @@ function stackla_field_social_elements($values, $form_state) {
   return $elements;
 }
 
-function stackla_field_ajax_filter_callback($form, &$form_state) {
-
-}
 
 function stackla_field_ajax_social_callback($form, &$form_state) {
-  // gets an array of the path of the triggering element.
   // gets an array of the path of the triggering element.
   $parents = $form_state['triggering_element']['#array_parents'];
 
   // removes the triggering element name.
   array_pop($parents);
-
+  array_pop($parents);
   array_pop($parents);
 
   // turns the array into a path on $form - i.e. $form['field_name']['und'][0]['your_element_name'];
@@ -461,7 +482,7 @@ function stackla_field_theme($existing, $type, $theme, $path) {
  * Implements hook_preprocess_stackla_field().
  */
 function stackla_field_preprocess_stackla_field(&$vars) {
-  if(!empty($vars['data']['filter_menu'])) {
+  if (!empty($vars['data']['filter_menu'])) {
     $vars['filters'] = array(
       '#theme' => 'stackla_field_filters',
       '#filters' => $vars['data']['filter_menu'],
@@ -493,10 +514,8 @@ function theme_stackla_field_filters($variables) {
 
       // We don't use l() here because we don't want an href attribute on the
       // <a> tag.
-      $filter_list_elements[] = sprintf('<a data-filter-id="%s">%s</a>',
-          $filter_id,
-          t($filter['title'])
-          );
+      $filter_list_elements[] = sprintf('<a data-filter-id="%s">%s</a>', $filter_id, t($filter['title'])
+      );
     }
   }
   if (!empty($filter_list_elements)) {
@@ -506,14 +525,14 @@ function theme_stackla_field_filters($variables) {
       '#attributes' => array(
         'class' => array('stackla-filter-list stackla-id-' . $variables['field_id']), //add id here!
       ),
-        // add attached js here.
+      // add attached js here.
       '#attached' => array(
         'js' => array(
           $js => array(
             'type' => 'inline',
             'scope' => 'footer',
-            ),
-         ),
+          ),
+        ),
         'css' => array(drupal_get_path('module', 'stackla_field') . '/css/stackla_field_filters.css'),
       ),
     );
