@@ -361,16 +361,65 @@ function stackla_field_field_validate($entity_type, $entity, $field, $instance, 
 }
 
 /**
- * Take all the values from the widget form and serialise them to store.
+ * Field element validation.
  */
 function stackla_field_element_validate($element, &$form_state) {
   $delta = $element['#delta'];
   $field = $form_state['field'][$element['#field_name']][$element['#language']]['field'];
   $field_name = $field['field_name'];
+  // Trying to add a new filter or query without setting the node name will
+  // trigger a validation error.
+  // Hack around this by setting the node title to the same as the widget title
+  // if it's not already set.
+  $errors = form_get_errors();
+  if (!empty($errors['title']) && !empty($form_state['values'][$field_name][$element['#language']][$delta]['widget_data']['name'])) {
+    stackla_field_filter_errors('title');
+    $form_state['values']['title'] = $form_state['values'][$field_name][$element['#language']][$delta]['widget_data']['name'];
+  }
+  // Serialise the form data for storage.
   if (isset($form_state['values'][$field_name][$element['#language']][$delta]['widget_data'])) {
     $values = $form_state['values'][$field_name][$element['#language']][$delta]['widget_data'];
     $value = serialize($values);
     form_set_value($element, $value, $form_state);
+  }
+}
+
+/**
+ * Helper function, filter reset form errors for a specific message.
+ *  @param string $element_name
+ *    The name of the element to filter.
+ */
+function stackla_field_filter_errors($element_name) {
+  $errors = form_get_errors();
+  if ($errors) {
+    // Clear errors.
+    form_clear_error();
+    // Clear error messages.
+    $error_messages = drupal_get_messages('error');
+    // Initialize an array where removed error messages are stored.
+    $removed_messages = array();
+
+    // Remove all errors originated by the 'foo][bar' element.
+    foreach ($errors as $name => $error_message) {
+      if ($name == $element_name) {
+        $removed_messages[] = $error_message;
+        unset($errors[$name]);
+      }
+    }
+
+    // Reinstate remaining errors.
+    foreach ($errors as $name => $error) {
+      form_set_error($name, $error);
+      // form_set_error() calls drupal_set_message(), so we have to filter out
+      // these from the error messages as well.
+      $removed_messages[] = $error;
+    }
+
+    // Reinstate remaining error messages (which, at this point, are messages that
+    // were originated outside of the validation process).
+    foreach (array_diff($error_messages['error'], $removed_messages) as $message) {
+      drupal_set_message($message, 'error');
+    }
   }
 }
 
