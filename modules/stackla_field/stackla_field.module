@@ -248,8 +248,16 @@ function stackla_field_filter_element($key, $filter) {
 function stackla_field_social_elements($values, $form_state) {
 
   $social_type_options = array(
-    'twitter_user' => t('Twitter User'),
-    'twitter_keyword_search' => t('Twitter Keyword Search'),
+    'twitter_user' => array(
+      'name' => t('Twitter User'),
+      'prefix' => '@',
+      'service' => 'twitter',
+    ),
+    'twitter_keyword_search' => array(
+      'name' => t('Twitter Keyword Search'),
+      'prefix' => NULL,
+      'service' => 'twitter',
+    ),
     'instagram_hashtag' => t('Instagram Hashtag'),
     'instagram_user' => t('Instagram User'),
     'facebook_page' => t('Facebook Page'),
