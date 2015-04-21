@@ -13,13 +13,9 @@ function stackla_libraries_info() {
     'name' => 'Stackla',
     'vendor url' => 'http://stackla.com/',
     'download url' => 'http://stackla.com/api',
-    'version arguments' => array(
-      'file' => 'stackla.php', // Could be any file with version info
-      'pattern' => '/Version (\d+)/',
-      'lines' => 5,
-    ),
+    'version' => 1,
     'files' => array(
-      'php' => array('stackla.php'), //this can be a path to the file location like array('lib/simple.js')
+      'php' => array('vendor/autoload.php'), //this can be a path to the file location like array('lib/simple.js')
     ),
   );
 
@@ -44,6 +40,28 @@ function stackla_menu() {
     'type' => MENU_NORMAL_ITEM
   );
 
+  $items['admin/config/services/stackla/test'] = array(
+    'title' => 'Stackla: Test SDK integration',
+    'description' => 'Test Stackla integration',
+    'page callback' => 'stackla_test_api',
+    'page arguments' => array('stackla_settings_form'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer stackla'),
+    'weight' => 0,
+    'type' => MENU_NORMAL_ITEM
+  );
+
+  $items['admin/config/services/stackla/accesscallback'] = array(
+    'title' => 'Stackla: Access Callback',
+    'description' => 'Callback for Stackal Oauth',
+    'page callback' => 'stackla_outh_callback',
+    'page arguments' => array('stackla_settings_form'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer stackla'),
+    'weight' => 0,
+    'type' => MENU_NORMAL_ITEM
+  );
+
   return $items;
 }
 
@@ -57,4 +75,52 @@ function stackla_permission() {
       'description' => t('Configure stackla module'),
     ),
   );
+}
+
+function stackla_test_api() {
+  $output = array();
+
+
+  return $ouput;
+}
+
+function stackla_outh_callback() {
+  libraries_load('stackla');
+  $output = array();
+
+  $access_code = $_GET['code'];
+  $client_id = variable_get('stackla_client_id');
+  $host = variable_get('stackla_stack_oauth_host');
+  $stack = variable_get('stackla_stack_name');
+  $client_secret = variable_get('stackla_client_secret');
+  $callback = 'http://' . $_SERVER['HTTP_HOST'] . '/admin/config/services/stackla/accesscallback';
+
+  $credentials = new Stackla\Core\Credentials($host, null, $stack);
+  $response = $credentials->generateToken($client_id, $client_secret, $access_code, $callback);
+
+  if ($response === false) {
+    drupal_set_message(t('Failed creating access token.'), 'error');
+  }
+  else {
+    stackla_set_access_token($credentials->token);
+    drupal_set_message(t('Successfully created access token'), 'status');
+  }
+  drupal_goto('admin/config/services/stackla');
+}
+
+function stackla_is_authenticated() {
+  if (stackla_get_access_token()) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+function stackla_get_access_token() {
+  return variable_get('stackla_access_token');
+}
+
+function stackla_set_access_token($token) {
+  //@todo: add 2 way encryption
+  variable_set('stackla_access_token', $token);
+  return TRUE;
 }

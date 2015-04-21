@@ -555,7 +555,6 @@ function stackla_field_field_formatter_view($entity_type, $entity, $field, $inst
     case 'stackla_field_widget_formatter':
       foreach ($items as $delta => $item) {
         $data = unserialize($item['widget_data']);
-        //dpm($data);
         $element[$delta] = array(
           '#theme' => 'stackla_field',
           '#data' => $data,
