@@ -51,7 +51,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       '#prefix' => '<div id="st-fieldset">',
       '#suffix' => '</div>',
       '#process' => array('stackla_field_widget_element_process'),
-      //'#submit' => array('stackla_field_field_widget_submit'),
     );
 
 
@@ -107,9 +106,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
     );
   }
 
-  //add a submit handler to serialise the submitted data
-  $form['#submit'][] = 'stackla_field_field_widget_submit';
-
   $element['widget_data'] = $widget;
   return $element;
 }
@@ -156,7 +152,7 @@ function stackla_field_filters($values, $form_state) {
           '#value' => t('Remove filter'),
           '#name' => 'filter-remove-' . $new_key,
           '#ajax' => array(
-            'callback' => 'stackla_field_ajax_social_callback',
+            'callback' => 'stackla_field_ajax_widget_callback',
             'wrapper' => 'st-fieldset',
             'method' => 'replace',
             'effect' => 'fade',
@@ -177,7 +173,7 @@ function stackla_field_filters($values, $form_state) {
     '#value' => t('Add new filter'),
     '#name' => 'filter_add_new',
     '#ajax' => array(
-      'callback' => 'stackla_field_ajax_social_callback',
+      'callback' => 'stackla_field_ajax_widget_callback',
       'wrapper' => 'st-fieldset',
       'method' => 'replace',
       'effect' => 'fade',
@@ -322,7 +318,7 @@ function stackla_field_term_elements($values, $form_state) {
             '#options' => $network_options,
             '#default_value' => (!empty($query['network'])) ? $query['network'] : 0,
             '#ajax' => array(
-              'callback' => 'stackla_field_ajax_social_callback',
+              'callback' => 'stackla_field_ajax_widget_callback',
               'wrapper' => 'st-fieldset',
               'method' => 'replace',
               'effect' => 'fade',
@@ -360,7 +356,7 @@ function stackla_field_term_elements($values, $form_state) {
             '#value' => t('Remove'),
             '#name' => 'social-remove-' . $key,
             '#ajax' => array(
-              'callback' => 'stackla_field_ajax_social_callback',
+              'callback' => 'stackla_field_ajax_widget_callback',
               'wrapper' => 'st-fieldset',
               'method' => 'replace',
               'effect' => 'fade',
@@ -378,7 +374,7 @@ function stackla_field_term_elements($values, $form_state) {
       '#default_value' => 0,
       //'#name' => 'stackla_social_new',
       '#ajax' => array(
-        'callback' => 'stackla_field_ajax_social_callback',
+        'callback' => 'stackla_field_ajax_widget_callback',
         'wrapper' => 'st-fieldset',
         'method' => 'replace',
         'effect' => 'fade',
@@ -389,8 +385,10 @@ function stackla_field_term_elements($values, $form_state) {
   return $elements;
 }
 
-
-function stackla_field_ajax_social_callback($form, &$form_state) {
+/**
+ * Ajax callback for widget form.
+ */
+function stackla_field_ajax_widget_callback($form, &$form_state) {
   // gets an array of the path of the triggering element.
   $parents = $form_state['triggering_element']['#array_parents'];
 
@@ -404,16 +402,6 @@ function stackla_field_ajax_social_callback($form, &$form_state) {
   return $element;
 }
 
-function stackla_field_field_widget_submit($form, &$form_state) {
-  dpm('#submit');
-  //dpm($form,'form on submit');
-  //dpm($form_state,'form state on submit');
-
-  //@todo: API interaction should happen here.
-  // submit filter data to API, generate filter ids to store.
-  // submit queries to API, generate query ids to store.
-  // submit widget info to API, generate widget embed code to store. (??)
-}
 
 /**
  * Implements hook_field_is_empty().
