@@ -14,9 +14,10 @@ function stackla_requirements($phase) {
   if($phase == 'runtime') {
     $requirements['stackla_library'] = array(
         'title' => $t('Stackla SDK library'),
-        'description' => $t('Download and extract the Stackla SDK to your libraries directory'),
+        'description' => $t('The Stackla SDK library is required.'),
     );
-    if($library = libraries_detect('stackla') && !empty($library['installed'])) {
+    $library = libraries_detect('stackla');
+    if($library && !empty($library['installed'])) {
       $requirements['stackla_library'] += array(
         'value' => $t('Installed'),
         'severity' => REQUIREMENT_OK,
