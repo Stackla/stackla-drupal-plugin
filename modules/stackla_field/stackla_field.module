@@ -61,9 +61,9 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       '#default_value' => (!empty($value['name'])) ? $value['name'] : '',
     );
 
-    $widget['social_queries'] = array(
+    $widget['terms'] = array(
       '#type' => 'fieldset',
-      '#title' => 'Social Queries',
+      '#title' => t('Terms'),
       '#collapsed' => FALSE,
       '#collapsible' => FALSE,
     );
@@ -71,14 +71,14 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
     $field_name = $field['field_name'];
     if (!empty($form_state['values'][$field_name]['und'][$delta]['widget_data'])) {
       $submitted_data = unserialize($form_state['values'][$field_name]['und'][$delta]['widget_data']);
-      $social_elements = stackla_field_social_elements($submitted_data, $form_state);
+      $social_elements = stackla_field_term_elements($submitted_data, $form_state);
       $filter_elements = stackla_field_filters($submitted_data, $form_state);
     }
     else {
-      $social_elements = stackla_field_social_elements($value, $form_state);
+      $social_elements = stackla_field_term_elements($value, $form_state);
       $filter_elements = stackla_field_filters($value, $form_state);
     }
-    $widget['social_queries'] += $social_elements;
+    $widget['terms'] += $social_elements;
 
     $widget['filter_menu'] = array(
       '#type' => 'fieldset',
@@ -254,30 +254,41 @@ function stackla_field_filter_element($key, $filter) {
  * Build social form elements from existing data.
  * @param array $values
  */
-function stackla_field_social_elements($values, $form_state) {
+function stackla_field_term_elements($values, $form_state) {
 
-  $social_type_options = array(
-    'twitter_user' => array(
-      'name' => t('Twitter User'),
-      'prefix' => '@',
-      'service' => 'twitter',
+  $social_networks = array(
+    'twitter' => array(
+      'name' => t('Twitter'),
+      'types' => array('user','hashtag','search')
     ),
-    'twitter_keyword_search' => array(
-      'name' => t('Twitter Keyword Search'),
-      'prefix' => NULL,
-      'service' => 'twitter',
+    'instagram' => array(
+      'name' => t('instagram'),
+      'types' => array('hashtag','user'),
     ),
-    'instagram_hashtag' => t('Instagram Hashtag'),
-    'instagram_user' => t('Instagram User'),
-    'facebook_page' => t('Facebook Page'),
-    'youtube_user' => t('YouTube User'),
-    'youtube_keyword_search' => t('YouTube Keyword Search'),
-    'googleplus_user' => t('Google+ User'),
+    'youtube' => array(
+      'name' => t('YouTube'),
+      'types' => array('user','search'),
+    ),
+    'facebook' => array(
+      'name' => t('Facebook'),
+      'types' => array('page'),
+    ),
+    'gplus' => array(
+      'name' => t('Google+'),
+      'types' => array('user'),
+    ),
   );
-  $initial_social_options = array(
-    '0' => t('Select Source...'),
+
+  $network_options = array();
+
+  foreach($social_networks as $social_key => $social_network) {
+    $network_options[$social_key] = $social_network['name'];
+  }
+
+  $initial_network_options = array(
+    '0' => t('Select Network...'),
   );
-  $initial_social_options += $social_type_options;
+  $initial_network_options += $network_options;
 
   // Check if a 'remove' button has been clicked
   $remove_index = 'empty';
@@ -290,20 +301,26 @@ function stackla_field_social_elements($values, $form_state) {
 
   $elements = array();
   $highest_key = 0;
-  if (!empty($values['social_queries'])) {
-    foreach ($values['social_queries'] as $key => $query) {
+  if (!empty($values['terms'])) {
+    foreach ($values['terms'] as $key => $query) {
       if ($key > $highest_key) {
         $highest_key = $key;
       }
-      if (!empty($query['type']) && $query['type'] != '0') {
+      if (!empty($query['network']) && $query['network'] != '0') {
         if ($key !== $remove_index) {
           $elements[$key] = array(
             '#type' => 'fieldset',
           );
-          $elements[$key]['type'] = array(
+
+          $elements[$key]['name'] = array(
+            '#type' => 'textfield',
+            '#default_value' => (!empty($query['name'])) ? $query['name'] : '',
+          );
+
+          $elements[$key]['network'] = array(
             '#type' => 'select',
-            '#options' => $social_type_options,
-            '#default_value' => (!empty($query['type'])) ? $query['type'] : 0,
+            '#options' => $network_options,
+            '#default_value' => (!empty($query['network'])) ? $query['network'] : 0,
             '#ajax' => array(
               'callback' => 'stackla_field_ajax_social_callback',
               'wrapper' => 'st-fieldset',
@@ -311,6 +328,14 @@ function stackla_field_social_elements($values, $form_state) {
               'effect' => 'fade',
             ),
           );
+
+          $elements[$key]['type'] = array(
+            '#type' => 'select',
+            '#options' => $social_networks[$query['network']]['types'],
+            '#default_value' => (!empty($query['type'])) ? $query['type'] : 0,
+          );
+
+
           $elements[$key]['value'] = array(
             '#type' => 'textfield',
             '#default_value' => (!empty($query['value'])) ? $query['value'] : '',
@@ -320,6 +345,16 @@ function stackla_field_social_elements($values, $form_state) {
               'placeholder' => t('Enter value'),
             );
           }
+
+
+
+          if (empty($query['name'])) {
+            $elements[$key]['name']['#attributes'] = array(
+              'placeholder' => t('Enter a name for your term'),
+            );
+          }
+
+
           $elements[$key]['remove'] = array(
             '#type' => 'button',
             '#value' => t('Remove'),
@@ -337,9 +372,9 @@ function stackla_field_social_elements($values, $form_state) {
   }
 
   $new_select = array(
-    'type' => array(
+    'network' => array(
       '#type' => 'select',
-      '#options' => $initial_social_options,
+      '#options' => $initial_network_options,
       '#default_value' => 0,
       //'#name' => 'stackla_social_new',
       '#ajax' => array(
@@ -406,8 +441,6 @@ function stackla_field_field_validate($entity_type, $entity, $field, $instance, 
  * Field element validation.
  */
 function stackla_field_element_validate($element, &$form_state) {
-  dpm($element,'element in element_validate');
-  dpm($form_state,'form state in element_validate');
   $delta = $element['#delta'];
   $field = $form_state['field'][$element['#field_name']][$element['#language']]['field'];
   $field_name = $field['field_name'];
