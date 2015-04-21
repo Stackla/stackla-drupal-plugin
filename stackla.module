@@ -134,7 +134,13 @@ function stackla_is_authenticated() {
  *    The access token string or FALSE if not present.
  */
 function stackla_get_access_token() {
-  return variable_get('stackla_access_token');
+  $encrypted_token =  variable_get('stackla_access_token');
+  if($encrypted_token) {
+    return decrypt($encrypted_token);
+  }
+  else {
+    return FALSE;
+  }
 }
 
 /**
@@ -146,6 +152,7 @@ function stackla_get_access_token() {
  */
 function stackla_set_access_token($token) {
   //@todo: add 2 way encryption
-  variable_set('stackla_access_token', $token);
+  $encrypted_token = encrypt($token);
+  variable_set('stackla_access_token', $encrypted_token);
   return TRUE;
 }
