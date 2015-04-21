@@ -77,13 +77,19 @@ function stackla_permission() {
   );
 }
 
+/**
+ * Callback for a page to test API connectivity.
+ */
 function stackla_test_api() {
   $output = array();
 
-
+//@todo: write something meaningful here.
   return $ouput;
 }
 
+/**
+ * Callback for Oauth authentication.
+ */
 function stackla_outh_callback() {
   libraries_load('stackla');
   $output = array();
@@ -108,6 +114,12 @@ function stackla_outh_callback() {
   drupal_goto('admin/config/services/stackla');
 }
 
+/**
+ * Check Stacka authentication.
+ *
+ * @return bool
+ *  TRUE if authenticated.
+ */
 function stackla_is_authenticated() {
   if (stackla_get_access_token()) {
     return TRUE;
@@ -115,10 +127,23 @@ function stackla_is_authenticated() {
   return FALSE;
 }
 
+/**
+ * Retrieve Stackla access token.
+ *
+ *  @return string
+ *    The access token string or FALSE if not present.
+ */
 function stackla_get_access_token() {
   return variable_get('stackla_access_token');
 }
 
+/**
+ * Set Stackla access token.
+ *  @param string $token
+ *    The token string to set.
+ *  @return boolean
+ *    TRUE if successful.
+ */
 function stackla_set_access_token($token) {
   //@todo: add 2 way encryption
   variable_set('stackla_access_token', $token);
