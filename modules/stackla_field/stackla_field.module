@@ -93,7 +93,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       '#title' => 'Look and Feel',
       '#collapsed' => FALSE,
       '#collapsible' => FALSE,
-
     );
 
     $widget['look_and_feel']['look_options'] = array(
@@ -110,7 +109,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
   return $element;
 }
 
-function stackla_field_widget_element_process($element,&$form_state) {
+function stackla_field_widget_element_process($element, &$form_state) {
   //dpm($element,'element in element process');
   //dpm($form_state,'form state in element process');
 
@@ -145,7 +144,7 @@ function stackla_field_filters($values, $form_state) {
       if ($new_key > $highest_key) {
         $highest_key = $new_key;
       }
-      if (!empty($filter['title']) && ($key !== $remove_index)  ) {
+      if (!empty($filter['title']) && ($key !== $remove_index)) {
         $elements += stackla_field_filter_element($new_key, $filter);
         $elements[$new_key]['remove'] = array(
           '#type' => 'button',
@@ -230,6 +229,7 @@ function stackla_field_filter_element($key, $filter) {
   );
 
   // networks
+  // @todo: limit these to networks chosen in terms.
   $elements[$key]['networks'] = array(
     '#title' => t('Networks'),
     '#type' => 'checkboxes',
@@ -237,7 +237,7 @@ function stackla_field_filter_element($key, $filter) {
       'twitter' => t('Twitter'),
       'instagram' => t('Instagram'),
       'facebook' => t('Facebook'),
-      'google_plus' => t('Google+'),
+      'gplus' => t('Google+'),
       'youtube' => t('YouTube'),
     ),
     '#default_value' => (!empty($filter['networks'])) ? $filter['networks'] : array(),
@@ -252,18 +252,41 @@ function stackla_field_filter_element($key, $filter) {
  */
 function stackla_field_term_elements($values, $form_state) {
 
+  $term_types = array(
+    'user' => array(
+      'name' => t('User'),
+      'prefix' => '@',
+    ),
+    'hashtag' => array(
+      'name' => t('Hashtag'),
+      'prefix' => '#'
+    ),
+    'page' => array(
+      'name' => t('Name'),
+      'prefix' => NULL,
+    ),
+    'search' => array(
+      'name' => t('Search'),
+      'prefix' => NULL,
+    ),
+  );
+
+
   $social_networks = array(
     'twitter' => array(
       'name' => t('Twitter'),
-      'types' => array('user','hashtag','search')
+      'types' => array(
+        'user',
+        'hashtag',
+        'search')
     ),
     'instagram' => array(
-      'name' => t('instagram'),
-      'types' => array('hashtag','user'),
+      'name' => t('Instagram'),
+      'types' => array('hashtag', 'user'),
     ),
     'youtube' => array(
       'name' => t('YouTube'),
-      'types' => array('user','search'),
+      'types' => array('user', 'search'),
     ),
     'facebook' => array(
       'name' => t('Facebook'),
@@ -277,7 +300,7 @@ function stackla_field_term_elements($values, $form_state) {
 
   $network_options = array();
 
-  foreach($social_networks as $social_key => $social_network) {
+  foreach ($social_networks as $social_key => $social_network) {
     $network_options[$social_key] = $social_network['name'];
   }
 
@@ -308,10 +331,13 @@ function stackla_field_term_elements($values, $form_state) {
             '#type' => 'fieldset',
           );
 
-          $elements[$key]['name'] = array(
-            '#type' => 'textfield',
-            '#default_value' => (!empty($query['name'])) ? $query['name'] : '',
-          );
+          if (!empty($query['type'])) {
+            $elements[$key]['name'] = array(
+              '#title' => t('Term name'),
+              '#type' => 'textfield',
+              '#default_value' => (!empty($query['name'])) ? $query['name'] : '',
+            );
+          }
 
           $elements[$key]['network'] = array(
             '#type' => 'select',
@@ -325,30 +351,54 @@ function stackla_field_term_elements($values, $form_state) {
             ),
           );
 
+          $type_options = array();
+          foreach ($social_networks[$query['network']]['types'] as $type_index) {
+            $type_options[$type_index] = $term_types[$type_index]['name'];
+          }
+
+          // If the type is not yet selected, put an explanatory option in there.
+          if (empty($query['type'])) {
+            $type_options = array('Select type') + $type_options;
+          }
+
           $elements[$key]['type'] = array(
             '#type' => 'select',
-            '#options' => $social_networks[$query['network']]['types'],
+            '#options' => $type_options,
             '#default_value' => (!empty($query['type'])) ? $query['type'] : 0,
+            '#ajax' => array(
+              'callback' => 'stackla_field_ajax_widget_callback',
+              'wrapper' => 'st-fieldset',
+              'method' => 'replace',
+              'effect' => 'fade',
+            ),
           );
 
-
-          $elements[$key]['value'] = array(
-            '#type' => 'textfield',
-            '#default_value' => (!empty($query['value'])) ? $query['value'] : '',
-          );
-          if (empty($query['value'])) {
-            $elements[$key]['value']['#attributes'] = array(
-              'placeholder' => t('Enter value'),
+          // Only show these fields after the type has been selected.
+          if (!empty($query['type'])) {
+            //
+            $value_field_title = t('@network @type:', array(
+              '@network' => $social_networks[$query['network']]['name'],
+              '@type' => $term_types[$query['type']]['name'],
+            ));
+            $elements[$key]['value'] = array(
+              '#title' => $value_field_title,
+              '#type' => 'textfield',
+              '#default_value' => (!empty($query['value'])) ? $query['value'] : '',
             );
+            if (empty($query['value'])) {
+              $elements[$key]['value']['#attributes'] = array(
+                'placeholder' => t('Enter value'),
+              );
+            }
+
+
+            if (empty($query['name'])) {
+              $elements[$key]['name']['#attributes'] = array(
+                'placeholder' => t('Enter a name for your term'),
+              );
+            }
           }
 
-
-
-          if (empty($query['name'])) {
-            $elements[$key]['name']['#attributes'] = array(
-              'placeholder' => t('Enter a name for your term'),
-            );
-          }
 
 
           $elements[$key]['remove'] = array(
@@ -401,7 +451,6 @@ function stackla_field_ajax_widget_callback($form, &$form_state) {
   $element = drupal_array_get_nested_value($form, $parents);
   return $element;
 }
-
 
 /**
  * Implements hook_field_is_empty().
@@ -610,23 +659,22 @@ function stackla_field_field_formatter_view($entity_type, $entity, $field, $inst
 
   return $element;
 }
+
 /**
  * Implements hook_field_update().
  */
 function stackla_field_field_update($entity_type, $entity, $field, $instance, $langcode, &$items) {
   //dpm($field,'field in update');
-  if(!empty($field['type']) && $field['type'] == 'stackla_field') {
 
-    dpm($items,'items of the stackla field');
-    foreach($items as $item_delta => $item) {
-      $data = unserialize($item['widget_data']);
-      dpm($data,'unserialised data');
-      if(!empty($data['social_queries'])) {
-        foreach ($data['social_queries'] as $social_query_delta => $social_query) {
-          if(!empty($social_query['title'])) {
-            if(empty($social_query['term_id'])) {
-              // No ID is set for this social query, so we create a new term.
-            }
+  dpm($items, 'items of the stackla field');
+  foreach ($items as $item_delta => $item) {
+    $data = unserialize($item['widget_data']);
+    dpm($data, 'unserialised data');
+    if (!empty($data['social_queries'])) {
+      foreach ($data['social_queries'] as $social_query_delta => $social_query) {
+        if (!empty($social_query['title'])) {
+          if (empty($social_query['term_id'])) {
+            // No ID is set for this social query, so we create a new term.
           }
         }
       }
@@ -638,5 +686,5 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
  * Implements hook_field_insert().
  */
 function stackla_field_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
-
+  dpm($items, 'items in insert hook');
 }
