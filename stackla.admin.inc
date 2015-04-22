@@ -70,6 +70,26 @@ function stackla_settings_form($form,&$form_state) {
        );
 
     }
+
+    $form['debug'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Debug'),
+    );
+
+    $form['debug']['stackla_debug_mode'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Enable debug mode'),
+      '#description' => t('Will display and log verbose debug information'),
+      '#default_value' => variable_get('stackla_debug_mode'),
+    );
+
+    $form['debug']['stackla_sim_mode'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Enable simulation mode'),
+      '#description' => t('When checked we don\'t send any data to stackla, just log what would have been sent'),
+      '#default_value' => variable_get('stackla_sim_mode'),
+    );
+
   }
 
   return(system_settings_form($form));

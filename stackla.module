@@ -171,6 +171,25 @@ function stackla_set_access_token($token) {
  */
 function stackla_create_term($term) {
 
+  // Sim mode.
+  if(variable_get('stackla_sim_mode') == 1) {
+    watchdog('stackla', 'Simulating term creation. Values: <pre>@values</pre>', array(
+      '@values' => print_r($term,TRUE),
+    ), WATCHDOG_NOTICE);
+
+    $new_term = new stdClass;
+    $new_term->id = rand(1, 1000);
+
+    return $new_term;
+  }
+
+  if(variable_get('stackla_debug_mode') == 1) {
+
+    watchdog('stackla', 'Attempting to create term. Values: <pre>@values</pre>', array(
+      '@values' => print_r($term,TRUE),
+    ), WATCHDOG_NOTICE);
+  }
+
   $stack = stackla_create_stack();
 
   $new_term = $stack->instance('term');
@@ -186,16 +205,56 @@ function stackla_create_term($term) {
   $new_term->network = $term['network'];
 
   // Create the term
-  $new_term->create();
+  try{
+    $new_term->create();
+  } catch (Exception $ex) {
+    dpm($new_term->getErrors(),'error');
+  }
 
 
   return $new_term;
+}
+
+function stackla_create_filter($filter) {
+  if(variable_get('stackla_debug_mode') == 1) {
+
+    watchdog('stackla', 'Attempting to create filter. Values: <pre>@values</pre>', array(
+      '@values' => print_r($filter,TRUE),
+    ), WATCHDOG_NOTICE);
+  }
+
+  $stack = stackla_create_stack();
+
+  $new_filter = $stack->instance('filter');
+  // Populate filter properties
+  $new_filter->name = $filter['title'];
+  $new_filter->networks = $filter['networks'];
+  $new_filter->media = $filter['show_media'];
+  $new_filter->sort = $filter['sort'];
+
+  try{
+    $new_filter->create();
+  } catch (Exception $ex) {
+    dpm($new_filter->getErrors(),'error');
+  }
+
+  return $new_filter;
+
 }
 
 function stackla_create_stack() {
   // Load the SDK.
   libraries_load('stackla');
   $stackla_variables = stackla_get_variables();
+
+  if(variable_get('stackla_debug_mode') == 1) {
+
+    watchdog('stackla', 'Attempting to create stack. Values: <pre>@values</pre>', array(
+      '@values' => print_r($stackla_variables,TRUE),
+    ), WATCHDOG_NOTICE);
+  }
+
+
   // Stackla stack name
   $stack_name = $stackla_variables['stack_name'];
 

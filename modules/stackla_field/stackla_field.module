@@ -199,13 +199,15 @@ function stackla_field_filter_element($key, $filter) {
 
 
   //sort by
-  $elements[$key]['sort_by'] = array(
+  $elements[$key]['sort'] = array(
     '#type' => 'select',
     '#options' => array(
-      'date_latest' => t('Date - Latest first'),
-      'another_option' => t('Another option'),
+      'source_created_at_desc' => t('Latest'),
+      'score_desc' => t('Greatest'),
+      'votes_desc' => t('Votes'),
+      'random' => t('Random'),
     ),
-    '#default_value' => (!empty($filter['sort_by'])) ? $filter['sort_by'] : '',
+    '#default_value' => (!empty($filter['sort'])) ? $filter['sort'] : '',
   );
 
   // show media
@@ -214,7 +216,7 @@ function stackla_field_filter_element($key, $filter) {
     '#title' => t('Show Media'),
     '#options' => array(
       'text' => t('Text only'),
-      'images' => t('Images'),
+      'image' => t('Images'),
       'video' => t('Video'),
     ),
     '#default_value' => (!empty($filter['show_media'])) ? $filter['show_media'] : array(),
@@ -254,7 +256,7 @@ function stackla_field_term_elements($values, $form_state) {
       'prefix' => '#'
     ),
     'page' => array(
-      'name' => t('Name'),
+      'name' => t('Page'),
       'prefix' => NULL,
     ),
     'search' => array(
@@ -687,11 +689,50 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
       }
     }
 
-    // Process new filters.
+    if (!empty($data['filter_menu'])) {
+      foreach ($data['filter_menu'] as $filter_delta => $filter) {
+        if (stackla_field_filter_validate($filter)) {
+          if ($new_filter = stackla_create_filter($filter)) {
+            if ($new_filter->id) {
+              $data['filter_menu'][$filter_delta]['stackla_id'] = $new_filter->id;
+              drupal_set_message(t('New filter @filter created in Stackla', array(
+                '@filter' => $filter['title'],
+              )));
+            }
+            else {
+              // Log error, set message.
+              drupal_set_message(t('Unable to create filter @filter', array(
+                '@filter' => $filter['title'],
+                  )), 'error');
+            }
+          }
+        }
+      }
+    }
 
     // Serialise the changed data and store.
     $items[$item_delta]['widget_data'] = serialize($data);
   }
+}
+
+function stackla_field_filter_validate($filter) {
+  if (empty($filter['title'])) {
+    return FALSE;
+  }
+
+  if (empty($filter['sort'])) {
+    return FALSE;
+  }
+
+  if (empty($filter['show_media'])) {
+    return FALSE;
+  }
+
+  if (empty($filter['networks'])) {
+    return FALSE;
+  }
+
+  return TRUE;
 }
 
 /**
