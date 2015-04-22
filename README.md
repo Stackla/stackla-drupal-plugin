@@ -10,6 +10,7 @@ More integrations are planned!
 
 ## Requirements
 * Libraries API: https://www.drupal.org/project/libraries
+* Encrypt project: https://www.drupal.org/project/encrypt
 * PHP xxx or greater is required for the Stackla SDK library.
 
 ## Installation
