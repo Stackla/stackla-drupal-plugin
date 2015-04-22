@@ -50,7 +50,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       '#delta' => $delta,
       '#prefix' => '<div id="st-fieldset">',
       '#suffix' => '</div>',
-      '#process' => array('stackla_field_widget_element_process'),
     );
 
 
@@ -106,13 +105,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
   }
 
   $element['widget_data'] = $widget;
-  return $element;
-}
-
-function stackla_field_widget_element_process($element, &$form_state) {
-  //dpm($element,'element in element process');
-  //dpm($form_state,'form state in element process');
-
   return $element;
 }
 
@@ -664,27 +656,67 @@ function stackla_field_field_formatter_view($entity_type, $entity, $field, $inst
  * Implements hook_field_update().
  */
 function stackla_field_field_update($entity_type, $entity, $field, $instance, $langcode, &$items) {
-  //dpm($field,'field in update');
-
-  dpm($items, 'items of the stackla field');
-  foreach ($items as $item_delta => $item) {
-    $data = unserialize($item['widget_data']);
-    dpm($data, 'unserialised data');
-    if (!empty($data['social_queries'])) {
-      foreach ($data['social_queries'] as $social_query_delta => $social_query) {
-        if (!empty($social_query['title'])) {
-          if (empty($social_query['term_id'])) {
-            // No ID is set for this social query, so we create a new term.
-          }
-        }
-      }
-    }
-  }
+  //@todo: update field data via API.
 }
 
 /**
  * Implements hook_field_insert().
  */
 function stackla_field_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
-  dpm($items, 'items in insert hook');
+  foreach ($items as $item_delta => $item) {
+    $data = unserialize($item['widget_data']);
+    // Process new terms.
+    if (!empty($data['terms'])) {
+      foreach ($data['terms'] as $term_delta => $term) {
+        if (stackla_field_term_data_validate($term)) {
+          // submit the term to Stackla.
+          if ($new_term = stackla_create_term($term)) {
+            // Add the returned ID to the widget data.
+            $data['terms'][$term_delta]['stackla_id'] = $new_term->id;
+            drupal_set_message(t('New term @term created in Stackla', array(
+              '@term' => $term['name'],
+            )));
+          }
+          else {
+            // Log error, set message.
+            drupal_set_message(t('Unable to create term @term', array(
+              '@term' => $term['name'],
+                )), 'error');
+          }
+        }
+      }
+    }
+
+    // Process new filters.
+
+    // Serialise the changed data and store.
+    $items[$item_delta]['widget_data'] = serialize($data);
+  }
+}
+
+/**
+ * Utility function: validate a submitted term.
+ * @param type $term
+ */
+function stackla_field_term_data_validate($term) {
+
+  // Term must have a name.
+  if (empty($term['name'])) {
+    return FALSE;
+  }
+
+  // Term must have a network
+  if (empty($term['network'])) {
+    return FALSE;
+  }
+
+  if (empty($term['value'])) {
+    return FALSE;
+  }
+
+  if (empty($term['type'])) {
+    return FALSE;
+  }
+
+  return TRUE;
 }

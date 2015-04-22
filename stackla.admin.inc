@@ -10,11 +10,11 @@
 function stackla_settings_form($form,&$form_state) {
   $form = array();
 
-  $form['stackla_stack_id'] = array(
+  $form['stackla_host_name'] = array(
     '#title' => t('Your Stackla Host Name'),
     '#type' => 'textfield',
     '#required' => TRUE,
-    '#default_value' => variable_get('stackla_stack_id'),
+    '#default_value' => variable_get('stackla_host_name'),
   );
 
   $form['stackla_stack_oauth_host'] = array(
@@ -93,11 +93,12 @@ function stackla_authenticate($form,&$form_state) {
   if(!stackla_admin_check_requirements()) {
     return FALSE;
   }
-  $client_id = variable_get('stackla_client_id');
+  $client_id = variable_get('stackla_host_name');
   $host = variable_get('stackla_stack_oauth_host');
   $stack = variable_get('stackla_stack_name');
   $client_secret = variable_get('stackla_client_secret');
-  $callback = 'http://' . $_SERVER['HTTP_HOST'] . '/admin/config/services/stackla/accesscallback';
+  $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+  $callback = $protocol . $_SERVER['HTTP_HOST'] . '/admin/config/services/stackla/accesscallback';
   $credentials = new Stackla\Core\Credentials($host, null, $stack);
   $access_uri = $credentials->getAccessUri($client_id, $client_secret, $callback);
 
