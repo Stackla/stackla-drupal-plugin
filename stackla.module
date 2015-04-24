@@ -227,9 +227,9 @@ function stackla_create_filter($filter) {
 
   $new_filter = $stack->instance('filter');
   // Populate filter properties
-  $new_filter->name = $filter['title'];
+  $new_filter->name = $filter['name'];
   $new_filter->networks = $filter['networks'];
-  $new_filter->media = $filter['show_media'];
+  $new_filter->media = $filter['media'];
   $new_filter->sort = $filter['sort'];
 
   try{
@@ -242,7 +242,44 @@ function stackla_create_filter($filter) {
 
 }
 
+function stackla_update_filter($filter,$original_filter) {
+
+  $stack = stackla_create_stack();
+
+  // Easiest way to update is create a new filter object locally,
+  // populate with submitted data, then send.
+  // In future we can get fancy here by only sending changed data etc.
+
+  $updated_filter = $stack->instance('filter',$filter['stackla_id']);
+  // Populate filter properties
+  $updated_filter->name = $filter['name'];
+  $updated_filter->networks = $filter['networks'];
+  $updated_filter->media = $filter['media'];
+  $updated_filter->sort = $filter['sort'];
+
+  if(variable_get('stackla_debug_mode') == 1) {
+
+    watchdog('stackla', 'Attempting to update filter. New values: <pre>@new_values</pre>, original values: <pre>@orig_values</pre>, new filter object: <pre>@filter_obj</pre>', array(
+      '@new_values' => print_r($filter,TRUE),
+      '@orig_values' => print_r($original_filter,TRUE),
+      '@filter_obj' => print_r($updated_filter,TRUE),
+    ), WATCHDOG_NOTICE);
+  }
+
+
+  try{
+    $updated_filter->update();
+  } catch (Exception $ex) {
+    dpm($updated_filter->getErrors(),'error');
+  }
+
+  return $updated_filter;
+}
+
 function stackla_create_stack() {
+
+  // @todo: static cache.
+
   // Load the SDK.
   libraries_load('stackla');
   $stackla_variables = stackla_get_variables();

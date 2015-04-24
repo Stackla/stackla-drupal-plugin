@@ -237,6 +237,13 @@ function stackla_field_filter_element($key, $filter) {
     '#default_value' => (!empty($filter['networks'])) ? $filter['networks'] : array(),
   );
 
+  if (!empty($filter['stackla_id'])) {
+    $elements[$key]['stackla_id'] = array(
+      '#type' => 'hidden',
+      '#value' => $filter['stackla_id'],
+    );
+  }
+
   return $elements;
 }
 
@@ -393,6 +400,14 @@ function stackla_field_term_elements($values, $form_state) {
             }
           }
 
+          // Hidden field for stackla id if present
+          if (!empty($query['stackla_id'])) {
+            $elements[$key]['stackla_id'] = array(
+              '#type' => 'hidden',
+              '#value' => $query['stackla_id'],
+            );
+          }
+
 
 
           $elements[$key]['remove'] = array(
@@ -426,6 +441,7 @@ function stackla_field_term_elements($values, $form_state) {
     ),
   );
   $elements[$highest_key + 1] = $new_select;
+
   return $elements;
 }
 
@@ -658,13 +674,102 @@ function stackla_field_field_formatter_view($entity_type, $entity, $field, $inst
  * Implements hook_field_update().
  */
 function stackla_field_field_update($entity_type, $entity, $field, $instance, $langcode, &$items) {
-  //@todo: update field data via API.
+  dpm('update hook called');
+
+  $field_name = $field['field_name'];
+  $original_data = array();
+  foreach ($entity->original->{$field_name}[$entity->language] as $entity_widget_delta => $entity_widget) {
+    $original_data[$entity_widget_delta] = unserialize($entity_widget['widget_data']);
+  }
+
+  dpm($original_data, 'original data from supplied entity object');
+
+  foreach ($items as $item_delta => $item) {
+    $data = unserialize($item['widget_data']);
+    dpm($data, 'data in update hook');
+
+    // Compare terms in new data to original, call stackla if required.
+    // Compare filters in new data to original, call stackla  if required.
+    // Note we'll probably have to have some kind of sync/collision stuff in
+    // here at some point.
+    if (!empty($data['filter_menu'])) {
+      foreach ($data['filter_menu'] as $filter_delta => $filter) {
+        // If the filter is new, or the filter is changed, we need to do
+        // somthing here.
+
+        if (!empty($original_data[$item_delta]['filter_menu'][$filter_delta])) {
+          $original_filter = $original_data[$item_delta]['filter_menu'][$filter_delta];
+          if ($filter != $original_filter) {
+            if (!empty($original_filter['stackla_id'])) {
+              dpm('filter does not match original, run update here!!');
+              dpm($filter, 'new filter data');
+              dpm($original_filter, 'original filter data');
+              $stackla_filter = stackla_field_prepare_filter($filter);
+              if ($updated_filter = stackla_update_filter($stackla_filter, $original_filter)) {
+                drupal_set_message(t('Filter @filter updated in Stackla', array(
+                  '@filter' => $filter['title'],
+                )));
+              }
+            }
+            else {
+              // the original filter does not have a stackla id, so
+              // we need to create a new filter in stackla.
+              if (stackla_field_filter_validate($filter)) {
+                dpm($filter,'orig filter does not have id, create in stackla');
+                $new_filter = stackla_field_create_filter($filter);
+                if ($new_filter->id) {
+                  $data['filter_menu'][$filter_delta]['stackla_id'] = $new_filter->id;
+                }
+              }
+            }
+          }
+        }
+        else {
+          // filter is new (does not exist in original entity), so we need
+          // to create it in stackla.
+          if (stackla_field_filter_validate($filter)) {
+            dpm('Filter is new, create in stackla');
+            $new_filter = stackla_field_create_filter($filter);
+            if ($new_filter->id) {
+              $data['filter_menu'][$filter_delta]['stackla_id'] = $new_filter->id;
+            }
+          }
+        }
+      }
+    }
+    // Serialise the changed data and store.
+    $items[$item_delta]['widget_data'] = serialize($data);
+  }
+}
+
+/**
+ * Create a new filter in Stackla.
+ *
+ * @param array $filter
+ */
+function stackla_field_create_filter($filter) {
+  $stackla_filter = stackla_field_prepare_filter($filter);
+  if ($new_filter = stackla_create_filter($stackla_filter)) {
+    if ($new_filter->id) {
+      drupal_set_message(t('New filter @filter created in Stackla', array(
+        '@filter' => $filter['title'],
+      )));
+    }
+    else {
+      // Log error, set message.
+      drupal_set_message(t('Unable to create filter @filter', array(
+        '@filter' => $filter['title'],
+          )), 'error');
+    }
+  }
+  return $new_filter;
 }
 
 /**
  * Implements hook_field_insert().
  */
 function stackla_field_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  dpm('insert hook called.');
   foreach ($items as $item_delta => $item) {
     $data = unserialize($item['widget_data']);
     // Process new terms.
@@ -692,7 +797,8 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
     if (!empty($data['filter_menu'])) {
       foreach ($data['filter_menu'] as $filter_delta => $filter) {
         if (stackla_field_filter_validate($filter)) {
-          if ($new_filter = stackla_create_filter($filter)) {
+          $stackla_filter = stackla_field_prepare_filter($filter);
+          if ($new_filter = stackla_create_filter($stackla_filter)) {
             if ($new_filter->id) {
               $data['filter_menu'][$filter_delta]['stackla_id'] = $new_filter->id;
               drupal_set_message(t('New filter @filter created in Stackla', array(
@@ -713,6 +819,25 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
     // Serialise the changed data and store.
     $items[$item_delta]['widget_data'] = serialize($data);
   }
+}
+
+/**
+ * Takes a filter array from the field and convert to a
+ * format ready to send to Stackla.
+ */
+function stackla_field_prepare_filter($filter) {
+  $stackla_filter = array(
+    'name' => $filter['title'],
+    'networks' => array_values($filter['networks']),
+    'media' => array_values($filter['show_media']),
+    'sort' => $filter['sort'],
+  );
+
+  if (!empty($filter['stackla_id'])) {
+    $stackla_filter['stackla_id'] = $filter['stackla_id'];
+  }
+
+  return $stackla_filter;
 }
 
 function stackla_field_filter_validate($filter) {
