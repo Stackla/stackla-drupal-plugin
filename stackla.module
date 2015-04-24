@@ -37,7 +37,7 @@ function stackla_menu() {
     'access arguments' => array('administer stackla'),
     'file' => 'stackla.admin.inc',
     'weight' => 0,
-    'type' => MENU_NORMAL_ITEM
+    'type' => MENU_NORMAL_ITEM,
   );
 
   $items['admin/config/services/stackla/test'] = array(
@@ -48,18 +48,17 @@ function stackla_menu() {
     'access callback' => 'user_access',
     'access arguments' => array('administer stackla'),
     'weight' => 0,
-    'type' => MENU_NORMAL_ITEM
+    'type' => MENU_NORMAL_ITEM,
   );
 
   $items['admin/config/services/stackla/accesscallback'] = array(
     'title' => 'Stackla: Access Callback',
     'description' => 'Callback for Stackal Oauth',
     'page callback' => 'stackla_outh_callback',
-    'page arguments' => array('stackla_settings_form'),
     'access callback' => 'user_access',
     'access arguments' => array('administer stackla'),
     'weight' => 0,
-    'type' => MENU_NORMAL_ITEM
+    'type' => MENU_CALLBACK,
   );
 
   return $items;
@@ -151,7 +150,6 @@ function stackla_get_access_token() {
  *    TRUE if successful.
  */
 function stackla_set_access_token($token) {
-  //@todo: add 2 way encryption
   $encrypted_token = encrypt($token);
   variable_set('stackla_access_token', $encrypted_token);
   return TRUE;
@@ -215,6 +213,78 @@ function stackla_create_term($term) {
   return $new_term;
 }
 
+function stackla_update_term($term,$original_term) {
+  // Sim mode.
+  if(variable_get('stackla_sim_mode') == 1) {
+    watchdog('stackla', 'Simulating term update. Values: <pre>@values</pre>', array(
+      '@values' => print_r($term,TRUE),
+    ), WATCHDOG_NOTICE);
+
+    $updated_term = new stdClass;
+    $updated_term->id = rand(1, 1000);
+
+    return $updated_term;
+  }
+
+  if(variable_get('stackla_debug_mode') == 1) {
+
+    watchdog('stackla', 'Attempting to update term. Values: <pre>@values</pre>', array(
+      '@values' => print_r($term,TRUE),
+    ), WATCHDOG_NOTICE);
+  }
+
+  $stack = stackla_create_stack();
+
+  $updated_term = $stack->instance('term',$term['stackla_id']);
+
+  // populating term properties
+  $updated_term->name = $term['name'];
+  $updated_term->display_name = $term['name'];
+  $updated_term->active = 1;
+  $updated_term->num_of_backfill = 0;
+  $updated_term->term = $term['value'];
+  $updated_term->type = $term['type'];
+  $updated_term->filter = '';
+  $updated_term->network = $term['network'];
+
+  // Create the term
+  try{
+    $updated_term->update();
+  } catch (Exception $ex) {
+    dpm($updated_term->getErrors(),'error');
+  }
+
+
+  return $updated_term;
+}
+
+function stackla_delete_term($term_id) {
+  $stack = stackla_create_stack();
+
+  $term = $stack->instance('term',$term_id);
+
+  try{
+    $term->delete();
+  } catch (Exception $ex) {
+    dpm($term->getErrors(),'error');
+  }
+
+  return $term;
+}
+
+/**
+ * Create a Stackla Filter.
+ * Refer to stackla API documentation for allowed values.
+ *
+ *  @param array $filter
+ *    The filter data to create. Values:
+ *      'name' (string) => The filter name.
+ *      'networks' (array) => numerically keyed array of networks.
+ *      'media' (array) => numerically keyed array of keys.
+ *      'sort' (string) => sort type.
+ *  @return obj
+ *    The stacka filter object returned from the remote call.
+ */
 function stackla_create_filter($filter) {
   if(variable_get('stackla_debug_mode') == 1) {
 

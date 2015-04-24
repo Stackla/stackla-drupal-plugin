@@ -326,7 +326,17 @@ function stackla_field_term_elements($values, $form_state) {
       if ($key > $highest_key) {
         $highest_key = $key;
       }
-      if (!empty($query['network']) && $query['network'] != '0') {
+      if (!empty($query['remove_flag'])) {
+        $elements[$key]['remove_flag'] = array(
+          '#type' => 'hidden',
+          '#value' => 1,
+        );
+        $elements[$key]['name'] = array(
+          '#type' => 'hidden',
+          '#value' => (!empty($query['name'])) ? $query['name'] : '',
+        );
+      }
+      elseif (!empty($query['network']) && $query['network'] != '0') {
         if ($key !== $remove_index) {
           $elements[$key] = array(
             '#type' => 'fieldset',
@@ -386,7 +396,7 @@ function stackla_field_term_elements($values, $form_state) {
               '#value' => (!empty($query['type'])) ? $query['type'] : 0,
             );
 
-            $elements[$key]['type_display']  = array(
+            $elements[$key]['type_display'] = array(
               '#type' => 'markup',
               '#markup' => t('Type: @type', array(
                 '@type' => (!empty($query['type'])) ? $type_options[$query['type']] : 0,
@@ -394,7 +404,6 @@ function stackla_field_term_elements($values, $form_state) {
               '#prefix' => '<p>',
               '#suffix' => '</p>',
             );
-
           }
           else {
             $elements[$key]['type'] = array(
@@ -408,14 +417,6 @@ function stackla_field_term_elements($values, $form_state) {
                 'effect' => 'fade',
               ),
             );
-          }
-
-
-          // If the term has been created in Stackla, the type should no
-          // longer be editable.
-          if (!empty($query['stackla_id'])) {
-            $elements[$key]['type']['#value'] = (!empty($query['name'])) ? $query['name'] : '';
-            $elements[$key]['type']['#description'] = t('You can not edit this.');
           }
 
           // Only show these fields after the type has been selected.
@@ -465,6 +466,20 @@ function stackla_field_term_elements($values, $form_state) {
               'effect' => 'fade',
             ),
           );
+        }
+        else {
+          // We only need to flag for deletion if the term has already been
+          // created in stackla.
+          if (!empty($query['stackla_id'])) {
+            $elements[$key]['remove_flag'] = array(
+              '#type' => 'hidden',
+              '#value' => 1,
+            );
+            $elements[$key]['name'] = array(
+              '#type' => 'hidden',
+              '#value' => (!empty($query['name'])) ? $query['name'] : '',
+            );
+          }
         }
       }
     }
@@ -733,13 +748,66 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
     dpm($data, 'data in update hook');
 
     // Compare terms in new data to original, call stackla if required.
+    if (!empty($data['terms'])) {
+      foreach ($data['terms'] as $term_delta => $term) {
+        if (!empty($term['remove_flag'])) {
+          // remove the term
+          if (stackla_delete_term($term_delta)) {
+            drupal_set_message(t('Term @term has been deleted', array(
+              '@term' => $term['name'],
+                )), 'status');
+          }
+          else {
+            drupal_set_message(t('Failed to delete @term', array(
+              '@term' => $term['name'],
+                )), 'error');
+          }
+        }
+
+
+
+        if (!empty($original_data[$item_delta]['terms'][$term_delta])) {
+          $original_term = $original_data[$item_delta]['terms'][$term_delta];
+          if ($term != $original_term) {
+            dpm('terms do not match!!');
+            if (!empty($original_term['stackla_id'])) {
+              dpm('original has stackla id, initiating update');
+              dpm($term, 'new term data');
+              dpm($original_term, 'original term data');
+              if ($updated_term = stackla_update_term($term, $original_term)) {
+                drupal_set_message(t('Term @term updated in Stackla', array(
+                  '@term' => $term['name'],
+                )));
+              }
+            }
+            else {
+              dpm($term, 'I think this might be a new term, validating data');
+              // a new term to add.
+              if (stackla_field_term_data_validate($term)) {
+                dpm('creating new term.');
+                $new_term = stackla_create_term($term);
+                if ($new_term->id) {
+                  drupal_set_message(t('Term @term created in Stackla', array(
+                    '@term' => $term['name'],
+                  )));
+                }
+                else {
+                  drupal_set_message(t('Unable to create @term, please check your widget settings', array(
+                    '@term' => $term['name'],
+                      )), 'error');
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     // Compare filters in new data to original, call stackla  if required.
     // Note we'll probably have to have some kind of sync/collision stuff in
     // here at some point.
     if (!empty($data['filter_menu'])) {
       foreach ($data['filter_menu'] as $filter_delta => $filter) {
-        // If the filter is new, or the filter is changed, we need to do
-        // somthing here.
 
         if (!empty($original_data[$item_delta]['filter_menu'][$filter_delta])) {
           $original_filter = $original_data[$item_delta]['filter_menu'][$filter_delta];
@@ -813,7 +881,6 @@ function stackla_field_create_filter($filter) {
  * Implements hook_field_insert().
  */
 function stackla_field_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
-  dpm('insert hook called.');
   foreach ($items as $item_delta => $item) {
     $data = unserialize($item['widget_data']);
     // Process new terms.
