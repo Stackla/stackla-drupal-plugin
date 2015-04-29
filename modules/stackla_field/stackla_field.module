@@ -110,9 +110,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
  * @return type
  */
 function stackla_field_look_elements($data, $form_state) {
-  dpm($data);
   $elements = array();
-
 
   $elements['look_options'] = array(
     '#type' => 'radios',
@@ -132,7 +130,6 @@ function stackla_field_look_elements($data, $form_state) {
   );
 
   if(!empty($data['look_and_feel']['stackla_id'])) {
-    dpm('not empty!!!');
     $elements['stackla_id'] = array(
       '#type' => 'hidden',
       '#value' => $data['look_and_feel']['stackla_id'],
@@ -149,8 +146,6 @@ function stackla_field_look_elements($data, $form_state) {
     $elements['details'] = stackla_field_widget_details($data['look_and_feel']);
   }
 
-
-  dpm($elements,'built elements');
   return $elements;
 }
 
@@ -1073,16 +1068,53 @@ function stackla_field_create_filter($filter) {
   return $new_filter;
 }
 
+function stackla_field_tag_prepare($tag_name) {
+  $tag = array();
+  $tag['tag'] = $tag_name;
+  $tag['type'] = 'content';
+  $tag['publicly_visible'] = 1;
+
+
+  return $tag;
+}
+
 /**
  * Implements hook_field_insert().
  */
 function stackla_field_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
   foreach ($items as $item_delta => $item) {
     $data = unserialize($item['widget_data']);
+
+    // If there is any data, create a new tag keyed by entity type and id.
+    if(!empty($data['terms']) || !empty($data['filter_menu']) || !empty($data['look_and_feel'])) {
+      // Create tag.
+      $entity_ids = entity_extract_ids($entity_type, $entity);
+      $tag_name = $entity_type . '-' . $entity_ids[0];
+      $tag_to_create = stackla_field_tag_prepare($tag_name);
+
+      $new_tag = stackla_create_tag($tag_to_create);
+
+      if($new_tag->id) {
+        $data['tag_id'] = $new_tag->id;
+        drupal_set_message(t('Created tag @tag',array(
+          '@tag' => $new_tag->tag,
+        )), 'status');
+      }
+      else {
+        $errors = $new_tag->getErrors();
+        drupal_set_message(t('unable to create new tag: @error',array(
+          '@error' => implode(', ',$errors),
+        )), 'error');
+      }
+
+    }
+
     // Process new terms.
     if (!empty($data['terms'])) {
       foreach ($data['terms'] as $term_delta => $term) {
         if (stackla_field_term_data_validate($term)) {
+          // Add the tagid for the entity
+          $term['tag_id'] = $data['tag_id'];
           // submit the term to Stackla.
           if ($new_term = stackla_create_term($term)) {
             // Add the returned ID to the widget data.
@@ -1104,6 +1136,7 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
     if (!empty($data['filter_menu'])) {
       foreach ($data['filter_menu'] as $filter_delta => $filter) {
         if (stackla_field_filter_validate($filter)) {
+          $filter['tag_id'] = $data['tag_id'];
           $stackla_filter = stackla_field_prepare_filter($filter);
           if ($new_filter = stackla_create_filter($stackla_filter)) {
             if ($new_filter->id) {
@@ -1123,6 +1156,24 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
       }
     }
 
+    //Widget!
+    if (!empty($data['look_and_feel']) && !empty($data['look_and_feel']['look_options'])) {
+        // No stackla id, so we need to create a new widget.
+        $new_widget = stackla_field_create_stackla_widget($data);
+        if($new_widget->id) {
+          drupal_set_message(t('Created Widget @name in Stackla', array(
+            '@name' => $new_widget->name,
+          )), 'status');
+          $data['look_and_feel']['stackla_id'] = $new_widget->id;
+          $data['look_and_feel']['embed_code'] = $new_widget->embed_code;
+        }
+        else {
+
+          drupal_set_message(t('Unable to create widget: @error',array(
+            '@error' => implode(', ',$new_widget->getErrors()),
+          )), 'error');
+        }
+    }
     // Serialise the changed data and store.
     $items[$item_delta]['widget_data'] = serialize($data);
   }
@@ -1138,6 +1189,7 @@ function stackla_field_prepare_filter($filter) {
     'networks' => array_values($filter['networks']),
     'media' => array_values($filter['show_media']),
     'sort' => $filter['sort'],
+    'tag_id' => $filter['tag_id'],
   );
 
   if (!empty($filter['stackla_id'])) {

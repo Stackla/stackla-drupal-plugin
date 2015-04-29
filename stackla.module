@@ -170,10 +170,10 @@ function stackla_set_access_token($token) {
 function stackla_create_term($term) {
 
   // Sim mode.
-  if(variable_get('stackla_sim_mode') == 1) {
+  if (variable_get('stackla_sim_mode') == 1) {
     watchdog('stackla', 'Simulating term creation. Values: <pre>@values</pre>', array(
-      '@values' => print_r($term,TRUE),
-    ), WATCHDOG_NOTICE);
+      '@values' => print_r($term, TRUE),
+        ), WATCHDOG_NOTICE);
 
     $new_term = new stdClass;
     $new_term->id = rand(1, 1000);
@@ -181,11 +181,11 @@ function stackla_create_term($term) {
     return $new_term;
   }
 
-  if(variable_get('stackla_debug_mode') == 1) {
+  if (variable_get('stackla_debug_mode') == 1) {
 
     watchdog('stackla', 'Attempting to create term. Values: <pre>@values</pre>', array(
-      '@values' => print_r($term,TRUE),
-    ), WATCHDOG_NOTICE);
+      '@values' => print_r($term, TRUE),
+        ), WATCHDOG_NOTICE);
   }
 
   $stack = stackla_create_stack();
@@ -203,22 +203,29 @@ function stackla_create_term($term) {
   $new_term->network = $term['network'];
 
   // Create the term
-  try{
+  try {
     $new_term->create();
   } catch (Exception $ex) {
-    dpm($new_term->getErrors(),'error');
+    dpm($new_term->getErrors(), 'error creating tag');
   }
 
-
+  if (!empty($term['tag_id'])) {
+    $tag = stackla_load_tag($term['tag_id']);
+    try {
+      $new_term->addTag($tag);
+    } catch (Exception $ex) {
+      dpm($new_term->getErrors(), 'error adding tag to term');
+    }
+  }
   return $new_term;
 }
 
-function stackla_update_term($term,$original_term) {
+function stackla_update_term($term, $original_term) {
   // Sim mode.
-  if(variable_get('stackla_sim_mode') == 1) {
+  if (variable_get('stackla_sim_mode') == 1) {
     watchdog('stackla', 'Simulating term update. Values: <pre>@values</pre>', array(
-      '@values' => print_r($term,TRUE),
-    ), WATCHDOG_NOTICE);
+      '@values' => print_r($term, TRUE),
+        ), WATCHDOG_NOTICE);
 
     $updated_term = new stdClass;
     $updated_term->id = rand(1, 1000);
@@ -226,16 +233,16 @@ function stackla_update_term($term,$original_term) {
     return $updated_term;
   }
 
-  if(variable_get('stackla_debug_mode') == 1) {
+  if (variable_get('stackla_debug_mode') == 1) {
 
     watchdog('stackla', 'Attempting to update term. Values: <pre>@values</pre>', array(
-      '@values' => print_r($term,TRUE),
-    ), WATCHDOG_NOTICE);
+      '@values' => print_r($term, TRUE),
+        ), WATCHDOG_NOTICE);
   }
 
   $stack = stackla_create_stack();
 
-  $updated_term = $stack->instance('term',$term['stackla_id']);
+  $updated_term = $stack->instance('term', $term['stackla_id']);
 
   // populating term properties
   $updated_term->name = $term['name'];
@@ -248,10 +255,10 @@ function stackla_update_term($term,$original_term) {
   $updated_term->network = $term['network'];
 
   // Create the term
-  try{
+  try {
     $updated_term->update();
   } catch (Exception $ex) {
-    dpm($updated_term->getErrors(),'error');
+    dpm($updated_term->getErrors(), 'error');
   }
 
 
@@ -261,12 +268,12 @@ function stackla_update_term($term,$original_term) {
 function stackla_delete_term($term_id) {
   $stack = stackla_create_stack();
 
-  $term = $stack->instance('term',$term_id);
+  $term = $stack->instance('term', $term_id);
 
-  try{
+  try {
     $term->delete();
   } catch (Exception $ex) {
-    dpm($term->getErrors(),'error');
+    dpm($term->getErrors(), 'error');
   }
 
   return $term;
@@ -286,11 +293,11 @@ function stackla_delete_term($term_id) {
  *    The stacka filter object returned from the remote call.
  */
 function stackla_create_filter($filter) {
-  if(variable_get('stackla_debug_mode') == 1) {
+  if (variable_get('stackla_debug_mode') == 1) {
 
     watchdog('stackla', 'Attempting to create filter. Values: <pre>@values</pre>', array(
-      '@values' => print_r($filter,TRUE),
-    ), WATCHDOG_NOTICE);
+      '@values' => print_r($filter, TRUE),
+        ), WATCHDOG_NOTICE);
   }
 
   $stack = stackla_create_stack();
@@ -302,17 +309,25 @@ function stackla_create_filter($filter) {
   $new_filter->media = $filter['media'];
   $new_filter->sort = $filter['sort'];
 
-  try{
+  if (!empty($filter['tag_id'])) {
+    $tag = stackla_load_tag($filter['tag_id']);
+    try {
+      $new_filter->addTag($tag);
+    } catch (Exception $ex) {
+      dpm($new_filter->getErrors(), 'error adding tag to filter');
+    }
+  }
+
+  try {
     $new_filter->create();
   } catch (Exception $ex) {
-    dpm($new_filter->getErrors(),'error');
+    dpm($new_filter->getErrors(), 'error');
   }
 
   return $new_filter;
-
 }
 
-function stackla_update_filter($filter,$original_filter) {
+function stackla_update_filter($filter, $original_filter) {
 
   $stack = stackla_create_stack();
 
@@ -320,27 +335,27 @@ function stackla_update_filter($filter,$original_filter) {
   // populate with submitted data, then send.
   // In future we can get fancy here by only sending changed data etc.
 
-  $updated_filter = $stack->instance('filter',$filter['stackla_id']);
+  $updated_filter = $stack->instance('filter', $filter['stackla_id']);
   // Populate filter properties
   $updated_filter->name = $filter['name'];
   $updated_filter->networks = $filter['networks'];
   $updated_filter->media = $filter['media'];
   $updated_filter->sort = $filter['sort'];
 
-  if(variable_get('stackla_debug_mode') == 1) {
+  if (variable_get('stackla_debug_mode') == 1) {
 
     watchdog('stackla', 'Attempting to update filter. New values: <pre>@new_values</pre>, original values: <pre>@orig_values</pre>, new filter object: <pre>@filter_obj</pre>', array(
-      '@new_values' => print_r($filter,TRUE),
-      '@orig_values' => print_r($original_filter,TRUE),
-      '@filter_obj' => print_r($updated_filter,TRUE),
-    ), WATCHDOG_NOTICE);
+      '@new_values' => print_r($filter, TRUE),
+      '@orig_values' => print_r($original_filter, TRUE),
+      '@filter_obj' => print_r($updated_filter, TRUE),
+        ), WATCHDOG_NOTICE);
   }
 
 
-  try{
+  try {
     $updated_filter->update();
   } catch (Exception $ex) {
-    dpm($updated_filter->getErrors(),'error');
+    dpm($updated_filter->getErrors(), 'error');
   }
 
   return $updated_filter;
@@ -349,15 +364,42 @@ function stackla_update_filter($filter,$original_filter) {
 function stackla_delete_filter($filter_id) {
   $stack = stackla_create_stack();
 
-  $filter = $stack->instance('filter',$filter_id);
+  $filter = $stack->instance('filter', $filter_id);
 
-  try{
+  try {
     $filter->delete();
   } catch (Exception $ex) {
-    dpm($filter->getErrors(),'error');
+    dpm($filter->getErrors(), 'error');
   }
 
   return $filter;
+}
+
+function stackla_create_tag($tag) {
+  $stack = stackla_create_stack();
+
+  $new_tag = $stack->instance('tag');
+
+  // Populate filter properties
+  $new_tag->tag = $tag['tag'];
+  $new_tag->type = $tag['type'];
+  $new_tag->publicly_visible = $tag['publicly_visible'];
+
+  try {
+    $new_tag->create();
+  } catch (Exception $ex) {
+    dpm($new_tag->getErrors(), 'error');
+  }
+
+  return $new_tag;
+}
+
+function stackla_load_tag($tag_id, $fetch = true) {
+  $stack = stackla_create_stack();
+
+  $tag = $stack->instance('tag', $tag_id, $fetch);
+
+  return $tag;
 }
 
 function stackla_create_widget($widget) {
@@ -371,29 +413,27 @@ function stackla_create_widget($widget) {
   $new_widget->type_style = $widget['type_style'];
   $new_widget->filter_id = $widget['filter_id'];
 
-  try{
+  try {
     $new_widget->create();
   } catch (Exception $ex) {
-    dpm($new_widget->getErrors(),'error');
+    dpm($new_widget->getErrors(), 'error');
   }
 
   return $new_widget;
-
 }
 
 function stackla_create_stack() {
 
   // @todo: static cache.
-
   // Load the SDK.
   libraries_load('stackla');
   $stackla_variables = stackla_get_variables();
 
-  if(variable_get('stackla_debug_mode') == 1) {
+  if (variable_get('stackla_debug_mode') == 1) {
 
     watchdog('stackla', 'Attempting to create stack. Values: <pre>@values</pre>', array(
-      '@values' => print_r($stackla_variables,TRUE),
-    ), WATCHDOG_NOTICE);
+      '@values' => print_r($stackla_variables, TRUE),
+        ), WATCHDOG_NOTICE);
   }
 
 
