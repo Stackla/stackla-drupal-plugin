@@ -360,6 +360,27 @@ function stackla_delete_filter($filter_id) {
   return $filter;
 }
 
+function stackla_create_widget($widget) {
+  $stack = stackla_create_stack();
+
+  $new_widget = $stack->instance('widget');
+
+  // Populate filter properties
+  $new_widget->name = $widget['name'];
+  $new_widget->type = $widget['type'];
+  $new_widget->type_style = $widget['type_style'];
+  $new_widget->filter_id = $widget['filter_id'];
+
+  try{
+    $new_widget->create();
+  } catch (Exception $ex) {
+    dpm($new_widget->getErrors(),'error');
+  }
+
+  return $new_widget;
+
+}
+
 function stackla_create_stack() {
 
   // @todo: static cache.

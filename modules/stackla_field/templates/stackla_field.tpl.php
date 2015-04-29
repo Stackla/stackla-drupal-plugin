@@ -9,14 +9,17 @@
  *
  */
 ?>
+<?php dpm($data); ?>
 <div class="stackla-field">
   <h3>Stackla widget: <?php print check_plain($data['name']); ?></h3>
   <?php if(!empty($filters)) : ?>
   <div class="filter-label">Filters:</div>
   <?php print(render($filters)); ?>
   <?php endif; ?>
+  <?php if (!empty($data['look_and_feel']['embed_code'])): ?>
   <div class="stackla-widget">
-    Widget output here.
+    <?php print $data['look_and_feel']['embed_code'];?>
   </div>
+  <?php endif; ?>
 </div>
 
