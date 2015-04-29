@@ -1001,6 +1001,9 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
               )), 'error');
         }
       }
+      elseif(!empty($original_data[$item_delta]['look_and_feel']['look_options'])) {
+        // Widget compare and update if neccessary here.
+      }
     }
 
     // Serialise the changed data and store.
