@@ -346,6 +346,20 @@ function stackla_update_filter($filter,$original_filter) {
   return $updated_filter;
 }
 
+function stackla_delete_filter($filter_id) {
+  $stack = stackla_create_stack();
+
+  $filter = $stack->instance('filter',$filter_id);
+
+  try{
+    $filter->delete();
+  } catch (Exception $ex) {
+    dpm($filter->getErrors(),'error');
+  }
+
+  return $filter;
+}
+
 function stackla_create_stack() {
 
   // @todo: static cache.

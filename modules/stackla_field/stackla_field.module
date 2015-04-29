@@ -136,20 +136,16 @@ function stackla_field_filters($values, $form_state) {
       if ($new_key > $highest_key) {
         $highest_key = $new_key;
       }
-      if (!empty($filter['title']) && ($key !== $remove_index)) {
-        $elements += stackla_field_filter_element($new_key, $filter);
-        $elements[$new_key]['remove'] = array(
-          '#type' => 'button',
-          '#value' => t('Remove filter'),
-          '#name' => 'filter-remove-' . $new_key,
-          '#ajax' => array(
-            'callback' => 'stackla_field_ajax_widget_callback',
-            'wrapper' => 'st-fieldset',
-            'method' => 'replace',
-            'effect' => 'fade',
-          ),
-        );
-        $new_key++;
+      if (!empty($filter['title'])) {
+        if ($key !== $remove_index) {
+          $elements += stackla_field_filter_element($new_key, $filter);
+
+          $new_key++;
+        }
+        else {
+          // Remove button has been clicked, set up hidden fields
+          $elements += stackla_field_filter_elements_remove($new_key, $filter);
+        }
       }
     }
   }
@@ -175,6 +171,36 @@ function stackla_field_filters($values, $form_state) {
 }
 
 /**
+ * Set up widget filter elements for items that have been flagged for
+ * removal.
+ */
+function stackla_field_filter_elements_remove($key, $filter) {
+  $elements = array();
+
+  $elements[$key] = array();
+
+  //title
+  $elements[$key]['title'] = array(
+    '#type' => 'hidden',
+    '#value' => (!empty($filter['title'])) ? $filter['title'] : '',
+  );
+
+  $elements[$key]['remove_flag'] = array(
+    '#type' => 'hidden',
+    '#value' => 1,
+  );
+
+  if (!empty($filter['stackla_id'])) {
+    $elements[$key]['stackla_id'] = array(
+      '#type' => 'hidden',
+      '#value' => $filter['stackla_id'],
+    );
+  }
+
+  return $elements;
+}
+
+/**
  *  Generate a single filter form element.
  * @param string $key
  *  the delta key
@@ -186,62 +212,82 @@ function stackla_field_filters($values, $form_state) {
 function stackla_field_filter_element($key, $filter) {
   $elements = array();
 
-  $elements[$key] = array(
-    '#type' => 'fieldset',
-  );
-
-  //title
-  $elements[$key]['title'] = array(
-    '#title' => t('Title'),
-    '#type' => 'textfield',
-    '#default_value' => (!empty($filter['title'])) ? $filter['title'] : '',
-  );
-
-
-  //sort by
-  $elements[$key]['sort'] = array(
-    '#type' => 'select',
-    '#options' => array(
-      'source_created_at_desc' => t('Latest'),
-      'score_desc' => t('Greatest'),
-      'votes_desc' => t('Votes'),
-      'random' => t('Random'),
-    ),
-    '#default_value' => (!empty($filter['sort'])) ? $filter['sort'] : '',
-  );
-
-  // show media
-  $elements[$key]['show_media'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Show Media'),
-    '#options' => array(
-      'text' => t('Text only'),
-      'image' => t('Images'),
-      'video' => t('Video'),
-    ),
-    '#default_value' => (!empty($filter['show_media'])) ? $filter['show_media'] : array(),
-  );
-
-  // networks
-  // @todo: limit these to networks chosen in terms.
-  $elements[$key]['networks'] = array(
-    '#title' => t('Networks'),
-    '#type' => 'checkboxes',
-    '#options' => array(
-      'twitter' => t('Twitter'),
-      'instagram' => t('Instagram'),
-      'facebook' => t('Facebook'),
-      'gplus' => t('Google+'),
-      'youtube' => t('YouTube'),
-    ),
-    '#default_value' => (!empty($filter['networks'])) ? $filter['networks'] : array(),
-  );
-
-  if (!empty($filter['stackla_id'])) {
-    $elements[$key]['stackla_id'] = array(
-      '#type' => 'hidden',
-      '#value' => $filter['stackla_id'],
+  if (!empty($filter['remove_flag'])) {
+    $elements = stackla_field_filter_elements_remove($key, $filter);
+  }
+  else {
+    $elements[$key] = array(
+      '#type' => 'fieldset',
     );
+
+    //title
+    $elements[$key]['title'] = array(
+      '#title' => t('Title'),
+      '#type' => 'textfield',
+      '#default_value' => (!empty($filter['title'])) ? $filter['title'] : '',
+    );
+
+
+    //sort by
+    $elements[$key]['sort'] = array(
+      '#type' => 'select',
+      '#options' => array(
+        'source_created_at_desc' => t('Latest'),
+        'score_desc' => t('Greatest'),
+        'votes_desc' => t('Votes'),
+        'random' => t('Random'),
+      ),
+      '#default_value' => (!empty($filter['sort'])) ? $filter['sort'] : '',
+    );
+
+    // show media
+    $elements[$key]['show_media'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Show Media'),
+      '#options' => array(
+        'text' => t('Text only'),
+        'image' => t('Images'),
+        'video' => t('Video'),
+      ),
+      '#default_value' => (!empty($filter['show_media'])) ? $filter['show_media'] : array(),
+    );
+
+    // networks
+    // @todo: limit these to networks chosen in terms.
+    $elements[$key]['networks'] = array(
+      '#title' => t('Networks'),
+      '#type' => 'checkboxes',
+      '#options' => array(
+        'twitter' => t('Twitter'),
+        'instagram' => t('Instagram'),
+        'facebook' => t('Facebook'),
+        'gplus' => t('Google+'),
+        'youtube' => t('YouTube'),
+      ),
+      '#default_value' => (!empty($filter['networks'])) ? $filter['networks'] : array(),
+    );
+
+    if (!empty($filter['stackla_id'])) {
+      $elements[$key]['stackla_id'] = array(
+        '#type' => 'hidden',
+        '#value' => $filter['stackla_id'],
+      );
+    }
+
+    //If there is data, add a 'remove' button.
+    if (!empty($filter)) {
+      $elements[$key]['remove'] = array(
+        '#type' => 'button',
+        '#value' => t('Remove filter'),
+        '#name' => 'filter-remove-' . $key,
+        '#ajax' => array(
+          'callback' => 'stackla_field_ajax_widget_callback',
+          'wrapper' => 'st-fieldset',
+          'method' => 'replace',
+          'effect' => 'fade',
+        ),
+      );
+    }
   }
 
   return $elements;
@@ -337,13 +383,12 @@ function stackla_field_term_elements($values, $form_state) {
         );
 
         // Hidden field for stackla id if present
-          if (!empty($query['stackla_id'])) {
-            $elements[$key]['stackla_id'] = array(
-              '#type' => 'hidden',
-              '#value' => $query['stackla_id'],
-            );
-          }
-
+        if (!empty($query['stackla_id'])) {
+          $elements[$key]['stackla_id'] = array(
+            '#type' => 'hidden',
+            '#value' => $query['stackla_id'],
+          );
+        }
       }
       elseif (!empty($query['network']) && $query['network'] != '0') {
         if ($key !== $remove_index) {
@@ -746,7 +791,6 @@ function stackla_field_field_formatter_view($entity_type, $entity, $field, $inst
  * Implements hook_field_update().
  */
 function stackla_field_field_update($entity_type, $entity, $field, $instance, $langcode, &$items) {
-  dpm('update hook called');
 
   $field_name = $field['field_name'];
   $original_data = array();
@@ -754,58 +798,52 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
     $original_data[$entity_widget_delta] = unserialize($entity_widget['widget_data']);
   }
 
-  dpm($original_data, 'original data from supplied entity object');
-
   foreach ($items as $item_delta => $item) {
     $data = unserialize($item['widget_data']);
-    dpm($data, 'data in update hook');
 
     // Compare terms in new data to original, call stackla if required.
     if (!empty($data['terms'])) {
       foreach ($data['terms'] as $term_delta => $term) {
         // First check for a remove flag, and remove if required.
         if (!empty($term['remove_flag'])) {
-          if(!empty($term['stackla_id'])) {
+          if (!empty($term['stackla_id'])) {
             // remove the term
-          if (stackla_delete_term($term['stackla_id'])) {
-            drupal_set_message(t('Term @term has been deleted', array(
-              '@term' => $term['name'],
-                )), 'status');
-            unset($data['terms'][$term_delta]);
-          }
-          else {
-            drupal_set_message(t('Failed to delete @term', array(
-              '@term' => $term['name'],
-                )), 'error');
-          }
+            if (stackla_delete_term($term['stackla_id'])) {
+              drupal_set_message(t('Term @term has been deleted', array(
+                '@term' => $term['name'],
+                  )), 'status');
+              unset($data['terms'][$term_delta]);
+            }
+            else {
+              drupal_set_message(t('Failed to delete @term', array(
+                '@term' => $term['name'],
+                  )), 'error');
+            }
           }
           else {
             // No stackla id set, so just remove locally.
             unset($data['terms'][$term_delta]);
           }
-
         }
 
         // if the term is complete but does not have a stackla_id, create a new
         // term in stackla.
-        elseif(empty($term['stackla_id']) && stackla_field_term_data_validate($term)) {
-                $new_term = stackla_create_term($term);
-                if ($new_term->id) {
-                  drupal_set_message(t('Term @term created in Stackla', array(
-                    '@term' => $term['name'],
-                  )));
-                  $data['terms'][$term_delta]['stackla_id'] = $new_term->id;
-                }
-                else {
-                  $error = $new_term->getErrors();
-                  drupal_set_message(t('Unable to create @term, @message', array(
-                    '@term' => $term['name'],
-                    '@message' => check_plain(implode(', ', $error)),
-                      )), 'error');
-                }
+        elseif (empty($term['stackla_id']) && stackla_field_term_data_validate($term)) {
+          $new_term = stackla_create_term($term);
+          if ($new_term->id) {
+            drupal_set_message(t('Term @term created in Stackla', array(
+              '@term' => $term['name'],
+            )));
+            $data['terms'][$term_delta]['stackla_id'] = $new_term->id;
+          }
+          else {
+            $error = $new_term->getErrors();
+            drupal_set_message(t('Unable to create @term, @message', array(
+              '@term' => $term['name'],
+              '@message' => check_plain(implode(', ', $error)),
+                )), 'error');
+          }
         }
-
-
         elseif (!empty($original_data[$item_delta]['terms'][$term_delta])) {
           $original_term = $original_data[$item_delta]['terms'][$term_delta];
           if ($term != $original_term) {
@@ -826,49 +864,50 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
     // here at some point.
     if (!empty($data['filter_menu'])) {
       foreach ($data['filter_menu'] as $filter_delta => $filter) {
-
-        if (!empty($original_data[$item_delta]['filter_menu'][$filter_delta])) {
-          $original_filter = $original_data[$item_delta]['filter_menu'][$filter_delta];
-          if ($filter != $original_filter) {
-            if (!empty($original_filter['stackla_id'])) {
-              dpm('filter does not match original, run update here!!');
-              dpm($filter, 'new filter data');
-              dpm($original_filter, 'original filter data');
-              $stackla_filter = stackla_field_prepare_filter($filter);
-              if ($updated_filter = stackla_update_filter($stackla_filter, $original_filter)) {
-                drupal_set_message(t('Filter @filter updated in Stackla', array(
-                  '@filter' => $filter['title'],
-                )));
-              }
+        if (!empty($filter['remove_flag'])) {
+          if (!empty($filter['stackla_id'])) {
+            // remove the term
+            if (stackla_delete_filter($filter['stackla_id'])) {
+              drupal_set_message(t('Filter @filter has been deleted', array(
+                '@filter' => $filter['title'],
+                  )), 'status');
+              unset($data['filter_menu'][$filter_delta]);
             }
             else {
-              // the original filter does not have a stackla id, so
-              // we need to create a new filter in stackla.
-              if (stackla_field_filter_validate($filter)) {
-                dpm($filter, 'orig filter does not have id, create in stackla');
-                $new_filter = stackla_field_create_filter($filter);
-                if ($new_filter->id) {
-                  $data['filter_menu'][$filter_delta]['stackla_id'] = $new_filter->id;
-                }
-              }
+              drupal_set_message(t('Failed to delete @filter', array(
+                '@filter' => $filter['title'],
+                  )), 'error');
             }
           }
+          else {
+            // No stackla id set, so just remove locally.
+            unset($data['filter_menu'][$filter_delta]);
+          }
         }
-        else {
-          // filter is new (does not exist in original entity), so we need
-          // to create it in stackla.
+        elseif (empty($filter['stackla_id'])) {
+          // the filter does not have a stackla id, so
+          // we need to create a new filter in stackla.
           if (stackla_field_filter_validate($filter)) {
-            dpm('Filter is new, create in stackla');
             $new_filter = stackla_field_create_filter($filter);
             if ($new_filter->id) {
               $data['filter_menu'][$filter_delta]['stackla_id'] = $new_filter->id;
             }
           }
         }
+        elseif (!empty($original_data[$item_delta]['filter_menu'][$filter_delta])) {
+          $original_filter = $original_data[$item_delta]['filter_menu'][$filter_delta];
+          if ($filter != $original_filter) {
+            $stackla_filter = stackla_field_prepare_filter($filter);
+            if ($updated_filter = stackla_update_filter($stackla_filter, $original_filter)) {
+              drupal_set_message(t('Filter @filter updated in Stackla', array(
+                '@filter' => $filter['title'],
+              )));
+            }
+          }
+        }
       }
     }
     // Serialise the changed data and store.
-    dpm($data, 'revised data');
     $items[$item_delta]['widget_data'] = serialize($data);
   }
 }
