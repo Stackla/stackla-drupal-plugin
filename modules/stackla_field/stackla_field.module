@@ -335,6 +335,15 @@ function stackla_field_term_elements($values, $form_state) {
           '#type' => 'hidden',
           '#value' => (!empty($query['name'])) ? $query['name'] : '',
         );
+
+        // Hidden field for stackla id if present
+          if (!empty($query['stackla_id'])) {
+            $elements[$key]['stackla_id'] = array(
+              '#type' => 'hidden',
+              '#value' => $query['stackla_id'],
+            );
+          }
+
       }
       elseif (!empty($query['network']) && $query['network'] != '0') {
         if ($key !== $remove_index) {
@@ -478,6 +487,10 @@ function stackla_field_term_elements($values, $form_state) {
             $elements[$key]['name'] = array(
               '#type' => 'hidden',
               '#value' => (!empty($query['name'])) ? $query['name'] : '',
+            );
+            $elements[$key]['stackla_id'] = array(
+              '#type' => 'hidden',
+              '#value' => $query['stackla_id'],
             );
           }
         }
@@ -752,23 +765,30 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
       foreach ($data['terms'] as $term_delta => $term) {
         // First check for a remove flag, and remove if required.
         if (!empty($term['remove_flag'])) {
-          // remove the term
-          if (stackla_delete_term($term_delta)) {
+          if(!empty($term['stackla_id'])) {
+            // remove the term
+          if (stackla_delete_term($term['stackla_id'])) {
             drupal_set_message(t('Term @term has been deleted', array(
               '@term' => $term['name'],
                 )), 'status');
+            unset($data['terms'][$term_delta]);
           }
           else {
             drupal_set_message(t('Failed to delete @term', array(
               '@term' => $term['name'],
                 )), 'error');
           }
+          }
+          else {
+            // No stackla id set, so just remove locally.
+            unset($data['terms'][$term_delta]);
+          }
+
         }
 
         // if the term is complete but does not have a stackla_id, create a new
         // term in stackla.
         elseif(empty($term['stackla_id']) && stackla_field_term_data_validate($term)) {
-          dpm($term, 'I think this might be a new term, validating data');
                 $new_term = stackla_create_term($term);
                 if ($new_term->id) {
                   drupal_set_message(t('Term @term created in Stackla', array(
@@ -777,8 +797,10 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
                   $data['terms'][$term_delta]['stackla_id'] = $new_term->id;
                 }
                 else {
-                  drupal_set_message(t('Unable to create @term, please check your widget settings', array(
+                  $error = $new_term->getErrors();
+                  drupal_set_message(t('Unable to create @term, @message', array(
                     '@term' => $term['name'],
+                    '@message' => check_plain(implode(', ', $error)),
                       )), 'error');
                 }
         }
@@ -787,11 +809,7 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
         elseif (!empty($original_data[$item_delta]['terms'][$term_delta])) {
           $original_term = $original_data[$item_delta]['terms'][$term_delta];
           if ($term != $original_term) {
-            dpm('terms do not match!!');
             if (!empty($original_term['stackla_id'])) {
-              dpm('original has stackla id, initiating update');
-              dpm($term, 'new term data');
-              dpm($original_term, 'original term data');
               if ($updated_term = stackla_update_term($term, $original_term)) {
                 drupal_set_message(t('Term @term updated in Stackla', array(
                   '@term' => $term['name'],
@@ -850,6 +868,7 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
       }
     }
     // Serialise the changed data and store.
+    dpm($data, 'revised data');
     $items[$item_delta]['widget_data'] = serialize($data);
   }
 }
