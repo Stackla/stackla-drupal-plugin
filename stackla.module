@@ -402,6 +402,13 @@ function stackla_load_tag($tag_id, $fetch = true) {
   return $tag;
 }
 
+/**
+ * Create widget
+ *  @param array $widget
+ *    Widget parameters
+ * @return object
+ *  Created object or object with errors as per the SDK.
+ */
 function stackla_create_widget($widget) {
   $stack = stackla_create_stack();
 
@@ -422,6 +429,47 @@ function stackla_create_widget($widget) {
   return $new_widget;
 }
 
+/**
+ * Update a widget
+ *  @param array $widget
+ *    Widget parameters.
+ */
+function stackla_update_widget($widget) {
+  $stack = stackla_create_stack();
+
+  // Easiest way to update is create a new filter object locally,
+  // populate with submitted data, then send.
+  // In future we can get fancy here by only sending changed data etc.
+
+  $updated_widget = $stack->instance('widget', $widget['stackla_id']);
+  // Populate filter properties
+  $updated_widget->name = $widget['name'];
+  $updated_widget->type = $widget['type'];
+  $updated_widget->type_style = $widget['type_style'];
+  $updated_widget->filter_id = $widget['filter_id'];
+
+  if (variable_get('stackla_debug_mode') == 1) {
+
+    watchdog('stackla', 'Attempting to update widget. New values: <pre>@new_values</pre>, new widget object: <pre>@filter_obj</pre>', array(
+      '@new_values' => print_r($widget, TRUE),
+      '@filter_obj' => print_r($updated_widget, TRUE),
+        ), WATCHDOG_NOTICE);
+  }
+
+
+  try {
+    $updated_widget->update();
+  } catch (Exception $ex) {
+    dpm($updated_widget->getErrors(), 'error');
+  }
+
+  return $updated_widget;
+}
+
+/**
+ * Create stack via the Stackla SDK.
+ * @return \Stackla\Api\Stack
+ */
 function stackla_create_stack() {
 
   // @todo: static cache.

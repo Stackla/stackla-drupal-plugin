@@ -170,6 +170,7 @@ function stackla_field_widget_details($look_and_feel) {
         '#title' => t('Style'),
         '#type' => 'select',
         '#options' => $style_options,
+        '#default_value' => (!empty($look_and_feel['details']['type_style'])) ? $look_and_feel['details']['type_style'] : 0,
       );
 
       break;
@@ -995,14 +996,26 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
           $data['look_and_feel']['embed_code'] = $new_widget->embed_code;
         }
         else {
-
           drupal_set_message(t('Unable to create widget: @error', array(
             '@error' => implode(', ', $new_widget->getErrors()),
               )), 'error');
         }
       }
-      elseif(!empty($original_data[$item_delta]['look_and_feel']['look_options'])) {
+      elseif (!empty($original_data[$item_delta]['look_and_feel']['look_options'])) {
+        dpm('widget comparison');
         // Widget compare and update if neccessary here.
+        $original_widget = $original_data[$item_delta]['look_and_feel'];
+        dpm($original_widget,'original widget');
+        dpm($data['look_and_feel'],'updated widget');
+        if ($data['look_and_feel'] != $original_widget) {
+          dpm('widget does not match, updating');
+          $stackla_widget = stackla_field_prepare_widget($data);
+          if ($updated_widget = stackla_update_widget($stackla_widget)) {
+            drupal_set_message(t('Widget @name updated in Stackla', array(
+              '@name' => $stackla_widget['name'],
+            )));
+          }
+        }
       }
     }
 
@@ -1050,6 +1063,9 @@ function stackla_field_prepare_widget($data) {
   $filter_values = array_values($data['filter_menu']);
   $filter = array_shift($filter_values);
   $prepared['filter_id'] = $filter['stackla_id'];
+  if(!empty($look_and_feel['stackla_id'])) {
+    $prepared['stackla_id'] = $look_and_feel['stackla_id'];
+  }
 
   return $prepared;
 }
