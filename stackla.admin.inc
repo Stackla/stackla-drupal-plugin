@@ -96,7 +96,7 @@ function stackla_settings_form($form,&$form_state) {
 }
 
 function stackla_admin_check_requirements() {
-  if(variable_get('stackla_stack_id') &&
+  if(variable_get('stackla_stack_name') &&
      variable_get('stackla_stack_oauth_host') &&
      variable_get('stackla_stack_name') &&
      variable_get('stackla_client_id') &&
