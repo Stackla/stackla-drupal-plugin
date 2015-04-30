@@ -71,7 +71,9 @@ function stackla_settings_form($form,&$form_state) {
 
     }
 
-    $form['debug'] = array(
+  }
+
+  $form['debug'] = array(
       '#type' => 'fieldset',
       '#title' => t('Debug'),
     );
@@ -89,8 +91,6 @@ function stackla_settings_form($form,&$form_state) {
       '#description' => t('When checked we don\'t send any data to stackla, just log what would have been sent'),
       '#default_value' => variable_get('stackla_sim_mode'),
     );
-
-  }
 
   return(system_settings_form($form));
 }
