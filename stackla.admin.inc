@@ -121,6 +121,7 @@ function stackla_authenticate($form,&$form_state) {
   //$protocol = isset($_SERVER["HTTPS"]) ? (($_SERVER["HTTPS"]==="on" || $_SERVER["HTTPS"]===1 || $_SERVER["SERVER_PORT"]===443) ? "https://" : "http://") :  (($_SERVER["SERVER_PORT"]===443) ? "https://" : "http://");
   //$callback = $protocol . $_SERVER['HTTP_HOST'] . '/admin/config/services/stackla/accesscallback';
   $callback = $base_url . '/admin/config/services/stackla/accesscallback';
+  dpm($callback,'callback');
   $credentials = new Stackla\Core\Credentials($host, null, $stack);
   $access_uri = $credentials->getAccessUri($client_id, $client_secret, $callback);
 
