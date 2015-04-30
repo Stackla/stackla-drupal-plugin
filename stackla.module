@@ -101,6 +101,15 @@ function stackla_outh_callback() {
   $client_secret = variable_get('stackla_client_secret');
   $callback = $base_url . '/admin/config/services/stackla/accesscallback';
 
+  if (variable_get('stackla_debug_mode') == 1) {
+    watchdog('stackla', 'Sending token request: client id: @client_id, client secret: @client_secret, access code: @access_code, callback: @callback', array(
+      '@client_id' => $client_id,
+      '@client_secret' => $client_secret,
+      '@access_code' => $access_code,
+      '@callback' => $callback,
+    ));
+  }
+
   $credentials = new Stackla\Core\Credentials($host, null, $stack);
   $response = $credentials->generateToken($client_id, $client_secret, $access_code, $callback);
 
