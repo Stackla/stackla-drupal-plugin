@@ -108,6 +108,7 @@ function stackla_admin_check_requirements() {
 }
 
 function stackla_authenticate($form,&$form_state) {
+  global $base_url;
   libraries_load('stackla');
   if(!stackla_admin_check_requirements()) {
     return FALSE;
@@ -116,8 +117,10 @@ function stackla_authenticate($form,&$form_state) {
   $host = variable_get('stackla_stack_oauth_host');
   $stack = variable_get('stackla_stack_name');
   $client_secret = variable_get('stackla_client_secret');
-  $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-  $callback = $protocol . $_SERVER['HTTP_HOST'] . '/admin/config/services/stackla/accesscallback';
+  //$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+  //$protocol = isset($_SERVER["HTTPS"]) ? (($_SERVER["HTTPS"]==="on" || $_SERVER["HTTPS"]===1 || $_SERVER["SERVER_PORT"]===443) ? "https://" : "http://") :  (($_SERVER["SERVER_PORT"]===443) ? "https://" : "http://");
+  //$callback = $protocol . $_SERVER['HTTP_HOST'] . '/admin/config/services/stackla/accesscallback';
+  $callback = $base_url . '/admin/config/services/stackla/accesscallback';
   $credentials = new Stackla\Core\Credentials($host, null, $stack);
   $access_uri = $credentials->getAccessUri($client_id, $client_secret, $callback);
 
