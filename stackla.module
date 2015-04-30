@@ -495,6 +495,8 @@ function stackla_update_widget($widget) {
 
     $new_widget->type_style = $widget['type_style'];
 
+    $new_widget->filter_id = $widget['filter_id'];
+
     $new_widget->update();
 
     return $new_widget;
