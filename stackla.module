@@ -456,7 +456,6 @@ function stackla_update_widget($widget) {
         ), WATCHDOG_NOTICE);
   }
 
-
   try {
     $updated_widget->update();
   } catch (Exception $ex) {
@@ -465,6 +464,41 @@ function stackla_update_widget($widget) {
 
   return $updated_widget;
 }
+
+  function stackla_get_widgets($limit = 25,$page = 1,$options = array()) {
+    $stack = stackla_create_stack();
+    $widgets = $stack->instance('widget');
+
+    $widgets->get($limit,$page,$options);
+
+    return $widgets;
+
+  }
+
+  function stackla_load_widget($widget_id) {
+    $stack = stackla_create_stack();
+    $widget = $stack->instance('widget',$widget_id);
+
+    return $widget;
+  }
+
+  function stackla_clone_widget($widget) {
+    dpm($widget,'clone called');
+    $stackla = stackla_create_stack();
+    $clone_parent_id = $widget['clone_parent'];
+
+    $clone_parent = stackla_load_widget($clone_parent_id);
+
+    $new_widget = $clone_parent->duplicate();
+
+    // update the new widget with the selected type_style.
+
+    $new_widget->type_style = $widget['type_style'];
+
+    $new_widget->update();
+
+    return $new_widget;
+  }
 
 /**
  * Create stack via the Stackla SDK.

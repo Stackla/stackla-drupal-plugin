@@ -123,8 +123,8 @@ function stackla_field_look_elements($data, $form_state) {
     '#type' => 'radios',
     '#options' => array(
       'new' => t('Create a new Stackla widget'),
-      'derive' => t('Derive an existing Stackla widget'),
-      'clone' => t('Clone an existing Stackla widget'),
+      'derive' => t('Reuse an existing Stackla widget'),
+      'clone' => t('Copy an existing Stackla widget'),
     ),
     '#default_value' => (!empty($data['look_and_feel']['look_options'])) ? $data['look_and_feel']['look_options'] : '',
     '#name' => 'widget_radios',
@@ -160,23 +160,65 @@ function stackla_field_widget_details($look_and_feel) {
 
   switch ($look_and_feel['look_options']) {
     case 'new':
-      // Type is limited to fluid for this version.
 
-      $style_options = array(
-        'fluid' => t('Vertical Fluid'),
-        'horizontal-fluid' => t('Horizontal Fluid'),
-      );
-      $elements['type_style'] = array(
-        '#title' => t('Style'),
+      $elements['type_style'] = stackla_field_style_options();
+      $elements['type_style']['#default_value'] = (!empty($look_and_feel['details']['type_style'])) ? $look_and_feel['details']['type_style'] : 0;
+
+      break;
+    case 'derive':
+
+      $derive_options = stackla_field_widget_select_options();
+
+      $elements['derive_parent'] = array(
+        '#title' => t('Select existing widget to reuse'),
         '#type' => 'select',
-        '#options' => $style_options,
-        '#default_value' => (!empty($look_and_feel['details']['type_style'])) ? $look_and_feel['details']['type_style'] : 0,
+        '#options' => $derive_options,
+        '#default_value' => (!empty($look_and_feel['details']['derive_parent'])) ? $look_and_feel['details']['derive_parent'] : 0,
       );
+
+      break;
+
+    case 'clone':
+      $clone_options = stackla_field_widget_select_options();
+
+      $elements['clone_parent'] = array(
+        '#title' => t('Select existing widget to copy from'),
+        '#type' => 'select',
+        '#options' => $clone_options,
+        '#default_value' => (!empty($look_and_feel['details']['clone_parent'])) ? $look_and_feel['details']['clone_parent'] : 0,
+      );
+
+      $elements['clone_type_style'] = stackla_field_style_options();
+      $elements['clone_type_style']['#default_value'] = (!empty($look_and_feel['details']['type_style'])) ? $look_and_feel['details']['type_style'] : 0;
 
       break;
   }
 
   return $elements;
+}
+
+function stackla_field_style_options() {
+  // Type is limited to fluid for this version.
+
+  $style_options = array(
+    'fluid' => t('Vertical Fluid'),
+    'horizontal-fluid' => t('Horizontal Fluid'),
+  );
+  return array(
+    '#title' => t('Style'),
+    '#type' => 'select',
+    '#options' => $style_options,
+  );
+}
+
+function stackla_field_widget_select_options() {
+  $options = array();
+  $widgets = stackla_get_widgets();
+  foreach ($widgets as $widget) {
+    $options[$widget->id] = t($widget->name);
+  }
+
+  return $options;
 }
 
 /**
@@ -965,6 +1007,7 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
             $new_filter = stackla_field_create_filter($filter);
             if ($new_filter->id) {
               $data['filter_menu'][$filter_delta]['stackla_id'] = $new_filter->id;
+              $data['filter_menu'][$filter_delta]['tag_id'] = $data['tag_id'];
             }
           }
         }
@@ -977,6 +1020,7 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
               drupal_set_message(t('Filter @filter updated in Stackla', array(
                 '@filter' => $filter['title'],
               )));
+              $data['filter_menu'][$filter_delta]['tag_id'] = $data['tag_id'];
             }
           }
         }
@@ -996,24 +1040,53 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
           $data['look_and_feel']['embed_code'] = $new_widget->embed_code;
         }
         else {
+          if (is_object($new_widget)) {
+            $errors = implode(', ', $new_widget->getErrors());
+          }
+          else {
+            $errors = t('Null returned');
+          }
           drupal_set_message(t('Unable to create widget: @error', array(
-            '@error' => implode(', ', $new_widget->getErrors()),
+            '@error' => $errors,
               )), 'error');
         }
       }
       elseif (!empty($original_data[$item_delta]['look_and_feel']['look_options'])) {
-        dpm('widget comparison');
         // Widget compare and update if neccessary here.
         $original_widget = $original_data[$item_delta]['look_and_feel'];
-        dpm($original_widget,'original widget');
-        dpm($data['look_and_feel'],'updated widget');
         if ($data['look_and_feel'] != $original_widget) {
-          dpm('widget does not match, updating');
-          $stackla_widget = stackla_field_prepare_widget($data);
-          if ($updated_widget = stackla_update_widget($stackla_widget)) {
-            drupal_set_message(t('Widget @name updated in Stackla', array(
-              '@name' => $stackla_widget['name'],
-            )));
+          dpm($original_widget, 'rigdy');
+          dpm($data['look_and_feel'], 'new one');
+          if ($data['look_and_feel']['look_options'] != $original_widget['look_options']) {
+            // the widget type has changed, create a new widget with the new type
+            $new_widget = stackla_field_create_stackla_widget($data);
+            if (is_object($new_widget) && $new_widget->id) {
+              drupal_set_message(t('Created Widget @name in Stackla', array(
+                '@name' => $new_widget->name,
+                  )), 'status');
+              $data['look_and_feel']['stackla_id'] = $new_widget->id;
+              $data['look_and_feel']['embed_code'] = $new_widget->embed_code;
+            }
+            else {
+              if (is_object($new_widget)) {
+                $errors = implode(', ', $new_widget->getErrors());
+              }
+              else {
+                $errors = t('Null returned');
+              }
+              drupal_set_message(t('Unable to create widget: @error', array(
+                '@error' => $errors,
+                  )), 'error');
+            }
+          }
+          else {
+            // Type has not changed, but something else has, so we run update.
+            $stackla_widget = stackla_field_prepare_widget($data);
+            if ($updated_widget = stackla_update_widget($stackla_widget)) {
+              drupal_set_message(t('Widget @name updated in Stackla', array(
+                '@name' => $stackla_widget['name'],
+              )));
+            }
           }
         }
       }
@@ -1034,6 +1107,25 @@ function stackla_field_create_stackla_widget($data) {
         return $new_widget;
       }
       break;
+
+    case 'derive':
+      if (stackla_field_widget_data_validate($look_and_feel)) {
+        $widget_to_send = stackla_field_prepare_widget($data);
+        $new_widget = stackla_derive_widget($widget_to_send);
+        return $new_widget;
+      }
+      break;
+
+    case 'clone':
+      dpm('clone!');
+      if (stackla_field_widget_data_validate($look_and_feel)) {
+        $widget_to_send = stackla_field_prepare_widget($data);
+        dpm($widget_to_send,'widget to send');
+        $new_widget = stackla_clone_widget($widget_to_send);
+        // @todo: need some validation here.
+        return $new_widget;
+      }
+      break;
   }
 }
 
@@ -1044,9 +1136,7 @@ function stackla_field_create_stackla_widget($data) {
  * @return boolean
  */
 function stackla_field_widget_data_validate($look_and_feel) {
-  if (empty($look_and_feel['details']['type_style'])) {
-    return FALSE;
-  }
+
   return TRUE;
 }
 
@@ -1058,12 +1148,28 @@ function stackla_field_prepare_widget($data) {
   // Type is hard coded to fluid (for now).
   $prepared['type'] = 'fluid';
 
-  $prepared['type_style'] = $look_and_feel['details']['type_style'];
+  if (!empty($look_and_feel['details']['type_style'])) {
+    $prepared['type_style'] = $look_and_feel['details']['type_style'];
+  }
+
+  if (!empty($look_and_feel['details']['derive_parent'])) {
+    $prepared['derive_parent'] = $look_and_feel['details']['derive_parent'];
+  }
+
+
+  if (!empty($look_and_feel['details']['clone_parent'])) {
+    $prepared['clone_parent'] = $look_and_feel['details']['clone_parent'];
+  }
+
+  if (!empty($look_and_feel['details']['clone_type_style'])) {
+    $prepared['type_style'] = $look_and_feel['details']['clone_type_style'];
+  }
+
   // Get first element in filter menu array.
   $filter_values = array_values($data['filter_menu']);
   $filter = array_shift($filter_values);
   $prepared['filter_id'] = $filter['stackla_id'];
-  if(!empty($look_and_feel['stackla_id'])) {
+  if (!empty($look_and_feel['stackla_id'])) {
     $prepared['stackla_id'] = $look_and_feel['stackla_id'];
   }
 
