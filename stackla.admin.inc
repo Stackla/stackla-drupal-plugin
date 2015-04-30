@@ -109,11 +109,10 @@ function stackla_admin_check_requirements() {
 
 function stackla_authenticate($form,&$form_state) {
   libraries_load('stackla');
-  dpm('authenticate called');
   if(!stackla_admin_check_requirements()) {
     return FALSE;
   }
-  $client_id = variable_get('stackla_host_name');
+  $client_id = variable_get('stackla_client_id');
   $host = variable_get('stackla_stack_oauth_host');
   $stack = variable_get('stackla_stack_name');
   $client_secret = variable_get('stackla_client_secret');
