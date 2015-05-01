@@ -567,6 +567,20 @@ function stackla_derive_widget($widget) {
   return $new_widget;
 }
 
+function stackla_delete_widget($widget_id) {
+  $stackla = stackla_create_stack();
+
+  $widget = $stack->instance('widget', $widget_id);
+
+  try {
+    $widget->delete();
+  } catch (Exception $ex) {
+    dpm($widget->getErrors(), 'error');
+  }
+
+  return $widget;
+}
+
 /**
  * Create stack via the Stackla SDK.
  * @return \Stackla\Api\Stack

@@ -31,7 +31,6 @@ function stackla_field_field_widget_info() {
   );
 }
 
-
 function stackla_field_authorise_widget() {
   $elements = array(
     '#type' => 'fieldset',
@@ -50,8 +49,8 @@ function stackla_field_authorise_widget() {
 function stackla_field_authorise_validate(&$form, &$form_state) {
 
   //Check if the authenticate button has been pressed.
-  if(!empty($form_state['clicked_button'])) {
-    if($form_state['clicked_button']['#name'] == 'stackla_field_authenticate') {
+  if (!empty($form_state['clicked_button'])) {
+    if ($form_state['clicked_button']['#name'] == 'stackla_field_authenticate') {
       // remove other validate functions.
       $return_path = current_path();
       stackla_user_authenticate($return_path);
@@ -946,6 +945,68 @@ function stackla_field_field_formatter_view($entity_type, $entity, $field, $inst
   }
 
   return $element;
+}
+
+/**
+ * Implements hook_field_delete().
+ */
+function stackla_field_field_delete($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  foreach ($items as $item_delta => $item) {
+    $data = unserialize($item['widget_data']);
+
+    // Delete all terms
+    if (!empty($data['terms'])) {
+      stackla_field_delete_terms($data['terms']);
+    }
+
+    // Delete all filters
+    if (!empty($data['filter_menu'])) {
+      stackla_field_delete_filters($data['filter_menu']);
+    }
+
+    // Delete all the widgets.
+    if (!empty($data['look_and_feel']) && !empty($data['look_and_feel']['look_options'])) {
+      stackla_field_delete_widget($data['look_and_feel']);
+    }
+  }
+}
+
+/**
+ * Delete all terms from Stackla from a submitted set (on entity delete).
+ *  @param array $terms
+ *    list of terms to delete.
+ */
+function stackla_field_delete_terms($terms) {
+  foreach ($terms as $term) {
+    if (!empty($term['stackla_id'])) {
+      stackla_delete_term($term['stackla_id']);
+    }
+  }
+}
+
+/**
+ * Delete all filters from Stackla from a submitted set (on entity delete).
+ *  @param array $filters
+ *    List of filters to delete.
+ */
+function stackla_field_delete_filters($filters) {
+  foreach ($filters as $filter) {
+    if (!empty($filter['stackla_id'])) {
+      stackla_delete_filter($filter['stackla_id']);
+    }
+  }
+}
+
+/**
+ * Delete widget from Stackla
+ *
+ * @param array $widgets
+ *  Sumbitted widget info.
+ */
+function stackla_field_delete_widget($widgets) {
+  if (!empty($widget['stackla_id'])) {
+    stackla_delete_widget($widget['stackla_id']);
+  }
 }
 
 /**
