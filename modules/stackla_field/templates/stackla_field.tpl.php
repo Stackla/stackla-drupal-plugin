@@ -12,8 +12,9 @@
 <div class="stackla-field">
   <h3>Stackla widget: <?php print check_plain($data['name']); ?></h3>
   <?php if(!empty($filters)) : ?>
-  <div class="filter-label">Filters:</div>
+  <div class="filters">
   <?php print(render($filters)); ?>
+    </div>
   <?php endif; ?>
   <?php if (!empty($data['look_and_feel']['embed_code'])): ?>
   <div class="stackla-widget">

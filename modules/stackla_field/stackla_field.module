@@ -898,7 +898,7 @@ function theme_stackla_field_filters($variables) {
       );
     }
   }
-  if (!empty($filter_list_elements)) {
+  if (!empty($filter_list_elements) && count($filter_list_elements) > 1) {
     $output = array(
       '#theme' => 'item_list',
       '#items' => $filter_list_elements,
