@@ -432,10 +432,17 @@ function stackla_create_widget($widget) {
   $new_widget->type_style = $widget['type_style'];
   $new_widget->filter_id = $widget['filter_id'];
 
+  if (variable_get('stackla_debug_mode') == 1) {
+
+    watchdog('stackla', 'Attempting to create widget. New values: <pre>@new_values</pre>', array(
+      '@new_values' => print_r($widget, TRUE),
+        ), WATCHDOG_NOTICE);
+  }
+
   try {
     $new_widget->create();
   } catch (Exception $ex) {
-    dpm($new_widget->getErrors(), 'error');
+    dpm($new_widget->getErrors(), 'exception in create widget:');
   }
 
   return $new_widget;

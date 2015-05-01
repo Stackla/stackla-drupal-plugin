@@ -263,22 +263,32 @@ function stackla_field_filters($values, $form_state) {
     }
   }
 
-  if (empty($elements[$highest_key]['title']['#default_value'])) {
+  //If we have no elements set (ie new form), create a blank fieldset.
+  if (empty($elements)) {
     $elements += stackla_field_filter_element($highest_key, array());
   }
 
-  $highest_key ++;
-  $elements[$highest_key]['add_new'] = array(
-    '#type' => 'button',
-    '#value' => t('Add new filter'),
-    '#name' => 'filter_add_new',
-    '#ajax' => array(
-      'callback' => 'stackla_field_ajax_widget_callback',
-      'wrapper' => 'st-fieldset',
-      'method' => 'replace',
-      'effect' => 'fade',
-    ),
-  );
+  //If the 'add new filter' button has been pressed, add a new blank fieldset
+  if (!empty($form_state['clicked_button'])) {
+    if($form_state['clicked_button']['#name'] == 'filter_add_new') {
+      $elements += stackla_field_filter_element($highest_key, array());
+    }
+  }
+
+
+    $highest_key ++;
+    $elements[$highest_key]['add_new'] = array(
+      '#type' => 'button',
+      '#value' => t('Add new filter'),
+      '#name' => 'filter_add_new',
+      '#ajax' => array(
+        'callback' => 'stackla_field_ajax_widget_callback',
+        'wrapper' => 'st-fieldset',
+        'method' => 'replace',
+        'effect' => 'fade',
+      ),
+    );
+
 
   return $elements;
 }
@@ -1120,7 +1130,7 @@ function stackla_field_create_stackla_widget($data) {
       dpm('clone!');
       if (stackla_field_widget_data_validate($look_and_feel)) {
         $widget_to_send = stackla_field_prepare_widget($data);
-        dpm($widget_to_send,'widget to send');
+        dpm($widget_to_send, 'widget to send');
         $new_widget = stackla_clone_widget($widget_to_send);
         // @todo: need some validation here.
         return $new_widget;
