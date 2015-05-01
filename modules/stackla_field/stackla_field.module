@@ -867,6 +867,7 @@ function stackla_field_preprocess_stackla_field(&$vars) {
       '#theme' => 'stackla_field_filters',
       '#filters' => $vars['data']['filter_menu'],
       '#field_id' => $vars['field_id'],
+      '#widget_id' => $vars['data']['look_and_feel']['stackla_id'],
     );
   }
   drupal_add_css(drupal_get_path('module', 'stackla_field') . '/css/stackla_field.css');
@@ -879,8 +880,7 @@ function theme_stackla_field_filters($variables) {
   $output = array();
   $list_class = '.stackla-filter-list.stackla-id-' . $variables['field_id'];
   $js = 'jQuery(\'' . $list_class . ' a\').click(function(){
-    var filter = $(this).parent();
-    StacklaFluidWidget.changeFilter(window.widgetId, filter.attr(\'data-filter\'));
+    StacklaFluidWidget.changeFilter(' . $variables['widget_id'] . ', jQuery(this).attr(\'data-filter-id\'));
 });';
 
 
@@ -888,10 +888,7 @@ function theme_stackla_field_filters($variables) {
   $filter_list_elements = array();
   foreach ($filters as $delta => $filter) {
     if (!empty($filter['title'])) {
-      // Generate a random filter id for now, replace this with actual data
-      // once the SDK is available.
-      $filter_id = $delta;
-
+      $filter_id = $filter['stackla_id'];
       // We don't use l() here because we don't want an href attribute on the
       // <a> tag.
       $filter_list_elements[] = sprintf('<a data-filter-id="%s">%s</a>', $filter_id, t($filter['title'])
