@@ -514,6 +514,19 @@ function stackla_update_widget($widget) {
     return $new_widget;
   }
 
+  function stackla_derive_widget($widget) {
+    $stackla = stackla_create_stack();
+
+    $derive_parent_id = $widget['derive_parent'];
+
+    $derive_parent = stackla_load_widget($derive_parent_id);
+
+    $new_widget = $derive_parent->derive($widget['filter_id'],$widget['name']);
+
+    return $new_widget;
+
+  }
+
 /**
  * Create stack via the Stackla SDK.
  * @return \Stackla\Api\Stack
