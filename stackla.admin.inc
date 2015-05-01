@@ -7,7 +7,7 @@
 /**
  * Stackla Base admin configuration form.
  */
-function stackla_settings_form($form,&$form_state) {
+function stackla_settings_form($form, &$form_state) {
   $form = array();
 
   $form['stackla_host_name'] = array(
@@ -45,81 +45,54 @@ function stackla_settings_form($form,&$form_state) {
     '#default_value' => variable_get('stackla_client_secret'),
   );
 
-  if(stackla_admin_check_requirements()) {
-    if(!stackla_is_authenticated()) {
+  if (stackla_check_requirements()) {
+    if (!stackla_is_authenticated()) {
       // Add authentication link.
-       $form['authenticate'] = array(
-         '#type' => 'submit',
-         '#value' => t('Authenticate with Stackla'),
-         '#op' => 'authenticate',
-         '#submit' => array('stackla_authenticate'),
-       );
+      $form['authenticate'] = array(
+        '#type' => 'submit',
+        '#value' => t('Authenticate with Stackla'),
+        '#op' => 'authenticate',
+        '#submit' => array('stackla_authenticate'),
+      );
     }
     else {
       // Add message 'Access token set'!
-      $form['authenticate']  = array(
+      $form['authenticate'] = array(
         '#type' => 'markup',
         '#markup' => '<p>' . t('Access token set!') . '</p>',
       );
 
       $form['reauthenticate'] = array(
-         '#type' => 'submit',
-         '#value' => t('Reuthenticate with Stackla'),
-         '#op' => 'authenticate',
-         '#submit' => array('stackla_authenticate'),
-       );
-
+        '#type' => 'submit',
+        '#value' => t('Reuthenticate with Stackla'),
+        '#op' => 'authenticate',
+        '#submit' => array('stackla_admin_authenticate'),
+      );
     }
-
   }
 
   $form['debug'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Debug'),
-    );
+    '#type' => 'fieldset',
+    '#title' => t('Debug'),
+  );
 
-    $form['debug']['stackla_debug_mode'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Enable debug mode'),
-      '#description' => t('Will display and log verbose debug information'),
-      '#default_value' => variable_get('stackla_debug_mode'),
-    );
+  $form['debug']['stackla_debug_mode'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable debug mode'),
+    '#description' => t('Will display and log verbose debug information'),
+    '#default_value' => variable_get('stackla_debug_mode'),
+  );
 
-    $form['debug']['stackla_sim_mode'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Enable simulation mode'),
-      '#description' => t('When checked we don\'t send any data to stackla, just log what would have been sent'),
-      '#default_value' => variable_get('stackla_sim_mode'),
-    );
+  $form['debug']['stackla_sim_mode'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable simulation mode'),
+    '#description' => t('When checked we don\'t send any data to stackla, just log what would have been sent'),
+    '#default_value' => variable_get('stackla_sim_mode'),
+  );
 
   return(system_settings_form($form));
 }
 
-function stackla_admin_check_requirements() {
-  if(variable_get('stackla_stack_name') &&
-     variable_get('stackla_stack_oauth_host') &&
-     variable_get('stackla_stack_name') &&
-     variable_get('stackla_client_id') &&
-     variable_get('stackla_client_secret')
-         ) {
-    return TRUE;
-  }
-  return FALSE;
-}
-
-function stackla_authenticate($form,&$form_state) {
-  global $base_url;
-  libraries_load('stackla');
-  if(!stackla_admin_check_requirements()) {
-    return FALSE;
-  }
-  $client_id = variable_get('stackla_client_id');
-  $host = variable_get('stackla_stack_oauth_host');
-  $stack = variable_get('stackla_stack_name');
-  $client_secret = variable_get('stackla_client_secret');
-  $callback = $base_url . '/admin/config/services/stackla/accesscallback';
-  $credentials = new Stackla\Core\Credentials($host, null, $stack);
-  $access_uri = $credentials->getAccessUri($client_id, $client_secret, $callback);
-
-  drupal_goto($access_uri);
+function stackla_admin_authenticate($form, &$form_state) {
+  stackla_authenticate();
 }

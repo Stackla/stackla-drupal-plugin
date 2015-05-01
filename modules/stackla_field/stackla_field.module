@@ -31,79 +31,116 @@ function stackla_field_field_widget_info() {
   );
 }
 
+
+function stackla_field_authorise_widget() {
+  $elements = array(
+    '#type' => 'fieldset',
+    '#title' => t('You must authenticate with Stackla'),
+  );
+
+  $elements['authenticate'] = array(
+    '#type' => 'button',
+    '#value' => t('Authenticate'),
+    '#name' => 'stackla_field_authenticate',
+  );
+
+  return $elements;
+}
+
+function stackla_field_authorise_validate(&$form, &$form_state) {
+
+  //Check if the authenticate button has been pressed.
+  if(!empty($form_state['clicked_button'])) {
+    if($form_state['clicked_button']['#name'] == 'stackla_field_authenticate') {
+      // remove other validate functions.
+      $return_path = current_path();
+      stackla_user_authenticate($return_path);
+    }
+  }
+}
+
 /**
  * Implements hook_field_widget_form().
  */
 function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+
   $value = isset($items[$delta]['widget_data']) ? unserialize($items[$delta]['widget_data']) : array();
   $widget = $element;
   $widget['#delta'] = $delta;
 
   if ($instance['widget']['type'] == 'stackla_field_widget') {
+    // Check if user is authorised
+    $authorised = stackla_is_authenticated();
 
-    $widget += array(
-      '#type' => 'fieldset',
-      '#element_validate' => array('stackla_field_element_validate'),
-      // #delta is set so that the validation function will be able
-      // to access external value information which otherwise would be
-      // unavailable.
-      '#delta' => $delta,
-      '#prefix' => '<div id="st-fieldset">',
-      '#suffix' => '</div>',
-    );
-
-
-    $widget['name'] = array(
-      '#type' => 'textfield',
-      '#title' => t('The title for your stackla widget'),
-      '#default_value' => (!empty($value['name'])) ? $value['name'] : '',
-    );
-
-    if (!empty($value['tag_id'])) {
-      $widget['tag_id'] = array(
-        '#type' => 'hidden',
-        '#value' => $value['tag_id'],
-      );
-    }
-
-    $widget['terms'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Create Terms'),
-      '#collapsed' => FALSE,
-      '#collapsible' => FALSE,
-    );
-
-    $field_name = $field['field_name'];
-    if (!empty($form_state['values'][$field_name]['und'][$delta]['widget_data'])) {
-      $submitted_data = unserialize($form_state['values'][$field_name]['und'][$delta]['widget_data']);
-      $social_elements = stackla_field_term_elements($submitted_data, $form_state);
-      $filter_elements = stackla_field_filters($submitted_data, $form_state);
-      $look_and_feel = stackla_field_look_elements($submitted_data, $form_state);
+    if (!$authorised) {
+      $widget += stackla_field_authorise_widget();
+      array_unshift($form['#validate'], 'stackla_field_authorise_validate');
     }
     else {
-      $social_elements = stackla_field_term_elements($value, $form_state);
-      $filter_elements = stackla_field_filters($value, $form_state);
-      $look_and_feel = stackla_field_look_elements($value, $form_state);
+      $widget += array(
+        '#type' => 'fieldset',
+        '#element_validate' => array('stackla_field_element_validate'),
+        // #delta is set so that the validation function will be able
+        // to access external value information which otherwise would be
+        // unavailable.
+        '#delta' => $delta,
+        '#prefix' => '<div id="st-fieldset">',
+        '#suffix' => '</div>',
+      );
+
+
+      $widget['name'] = array(
+        '#type' => 'textfield',
+        '#title' => t('The title for your stackla widget'),
+        '#default_value' => (!empty($value['name'])) ? $value['name'] : '',
+      );
+
+      if (!empty($value['tag_id'])) {
+        $widget['tag_id'] = array(
+          '#type' => 'hidden',
+          '#value' => $value['tag_id'],
+        );
+      }
+
+      $widget['terms'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Create Terms'),
+        '#collapsed' => FALSE,
+        '#collapsible' => FALSE,
+      );
+
+      $field_name = $field['field_name'];
+      if (!empty($form_state['values'][$field_name]['und'][$delta]['widget_data'])) {
+        $submitted_data = unserialize($form_state['values'][$field_name]['und'][$delta]['widget_data']);
+        $social_elements = stackla_field_term_elements($submitted_data, $form_state);
+        $filter_elements = stackla_field_filters($submitted_data, $form_state);
+        $look_and_feel = stackla_field_look_elements($submitted_data, $form_state);
+      }
+      else {
+        $social_elements = stackla_field_term_elements($value, $form_state);
+        $filter_elements = stackla_field_filters($value, $form_state);
+        $look_and_feel = stackla_field_look_elements($value, $form_state);
+      }
+      $widget['terms'] += $social_elements;
+
+      $widget['filter_menu'] = array(
+        '#type' => 'fieldset',
+        '#title' => 'Create Filters',
+        '#collapsed' => FALSE,
+        '#collapsible' => FALSE,
+      );
+
+      $widget['filter_menu'] += $filter_elements;
+
+      $widget['look_and_feel'] = array(
+        '#type' => 'fieldset',
+        '#title' => 'Look and Feel',
+        '#collapsed' => FALSE,
+        '#collapsible' => FALSE,
+      );
+
+      $widget['look_and_feel'] += $look_and_feel;
     }
-    $widget['terms'] += $social_elements;
-
-    $widget['filter_menu'] = array(
-      '#type' => 'fieldset',
-      '#title' => 'Create Filters',
-      '#collapsed' => FALSE,
-      '#collapsible' => FALSE,
-    );
-
-    $widget['filter_menu'] += $filter_elements;
-
-    $widget['look_and_feel'] = array(
-      '#type' => 'fieldset',
-      '#title' => 'Look and Feel',
-      '#collapsed' => FALSE,
-      '#collapsible' => FALSE,
-    );
-
-    $widget['look_and_feel'] += $look_and_feel;
   }
 
   $element['widget_data'] = $widget;
@@ -270,24 +307,24 @@ function stackla_field_filters($values, $form_state) {
 
   //If the 'add new filter' button has been pressed, add a new blank fieldset
   if (!empty($form_state['clicked_button'])) {
-    if($form_state['clicked_button']['#name'] == 'filter_add_new') {
+    if ($form_state['clicked_button']['#name'] == 'filter_add_new') {
       $elements += stackla_field_filter_element($highest_key, array());
     }
   }
 
 
-    $highest_key ++;
-    $elements[$highest_key]['add_new'] = array(
-      '#type' => 'button',
-      '#value' => t('Add new filter'),
-      '#name' => 'filter_add_new',
-      '#ajax' => array(
-        'callback' => 'stackla_field_ajax_widget_callback',
-        'wrapper' => 'st-fieldset',
-        'method' => 'replace',
-        'effect' => 'fade',
-      ),
-    );
+  $highest_key ++;
+  $elements[$highest_key]['add_new'] = array(
+    '#type' => 'button',
+    '#value' => t('Add new filter'),
+    '#name' => 'filter_add_new',
+    '#ajax' => array(
+      'callback' => 'stackla_field_ajax_widget_callback',
+      'wrapper' => 'st-fieldset',
+      'method' => 'replace',
+      'effect' => 'fade',
+    ),
+  );
 
 
   return $elements;

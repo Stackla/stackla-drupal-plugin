@@ -40,17 +40,6 @@ function stackla_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
 
-  $items['admin/config/services/stackla/test'] = array(
-    'title' => 'Stackla: Test SDK integration',
-    'description' => 'Test Stackla integration',
-    'page callback' => 'stackla_test_api',
-    'page arguments' => array('stackla_settings_form'),
-    'access callback' => 'user_access',
-    'access arguments' => array('administer stackla'),
-    'weight' => 0,
-    'type' => MENU_NORMAL_ITEM,
-  );
-
   $items['admin/config/services/stackla/accesscallback'] = array(
     'title' => 'Stackla: Access Callback',
     'description' => 'Callback for Stackal Oauth',
@@ -71,25 +60,61 @@ function stackla_permission() {
   return array(
     'administer stackla' => array(
       'title' => t('Administer stackla'),
-      'description' => t('Configure stackla module'),
+      'description' => t('Configure Stackla module'),
+    ),
+    'use stackla' => array(
+      'title' => t('Use Stackla'),
+      'description' => t('Create, edit and delete stackla widgets'),
     ),
   );
 }
 
-/**
- * Callback for a page to test API connectivity.
- */
-function stackla_test_api() {
-  $output = array();
+function stackla_check_requirements() {
+  if (variable_get('stackla_stack_name') &&
+      variable_get('stackla_stack_oauth_host') &&
+      variable_get('stackla_stack_name') &&
+      variable_get('stackla_client_id') &&
+      variable_get('stackla_client_secret')
+  ) {
+    return TRUE;
+  }
+  return FALSE;
+}
 
-//@todo: write something meaningful here.
-  return $ouput;
+function stackla_authenticate() {
+  global $base_url;
+  libraries_load('stackla');
+  if (!stackla_check_requirements()) {
+    return FALSE;
+  }
+  $client_id = variable_get('stackla_client_id');
+  $host = variable_get('stackla_stack_oauth_host');
+  $stack = variable_get('stackla_stack_name');
+  $client_secret = variable_get('stackla_client_secret');
+  $callback = $base_url . '/admin/config/services/stackla/accesscallback';
+  $credentials = new Stackla\Core\Credentials($host, null, $stack);
+  $access_uri = $credentials->getAccessUri($client_id, $client_secret, $callback);
+
+  drupal_goto($access_uri);
+}
+
+function stackla_user_authenticate($return_path = NULL) {
+  if ($return_path) {
+    // Store the return path in the user
+    global $user;
+    $user->data['stackla_return_path'] = $return_path;
+    user_save($user);
+  }
+  stackla_authenticate();
 }
 
 /**
  * Callback for Oauth authentication.
  */
 function stackla_outh_callback() {
+  // Clear any other messages.
+  drupal_get_messages();
+  global $user;
   global $base_url;
   libraries_load('stackla');
   $output = array();
@@ -122,7 +147,15 @@ function stackla_outh_callback() {
     stackla_set_access_token($credentials->token);
     drupal_set_message(t('Successfully created access token'), 'status');
   }
-  drupal_goto('admin/config/services/stackla');
+  if (!empty($user->data['stackla_return_path'])) {
+    $goto = $user->data['stackla_return_path'];
+    unset($user->data['stackla_return_path']);
+    user_save($user);
+  }
+  else {
+    $goto = 'admin/config/services/stackla';
+  }
+  drupal_goto($goto);
 }
 
 /**
@@ -145,9 +178,9 @@ function stackla_is_authenticated() {
  *    The access token string or FALSE if not present.
  */
 function stackla_get_access_token() {
-  $encrypted_token = variable_get('stackla_access_token');
-  if ($encrypted_token) {
-    return decrypt($encrypted_token);
+  global $user;
+  if (!empty($user->data['stackla_access_token'])) {
+    return decrypt($user->data['stackla_access_token']);
   }
   else {
     return FALSE;
@@ -163,7 +196,9 @@ function stackla_get_access_token() {
  */
 function stackla_set_access_token($token) {
   $encrypted_token = encrypt($token);
-  variable_set('stackla_access_token', $encrypted_token);
+  global $user;
+  $user->data['stackla_access_token'] = $encrypted_token;
+  user_save($user);
   return TRUE;
 }
 
@@ -484,55 +519,53 @@ function stackla_update_widget($widget) {
   return $updated_widget;
 }
 
-  function stackla_get_widgets($limit = 25,$page = 1,$options = array()) {
-    $stack = stackla_create_stack();
-    $widgets = $stack->instance('widget');
+function stackla_get_widgets($limit = 25, $page = 1, $options = array()) {
+  $stack = stackla_create_stack();
+  $widgets = $stack->instance('widget');
 
-    $widgets->get($limit,$page,$options);
+  $widgets->get($limit, $page, $options);
 
-    return $widgets;
+  return $widgets;
+}
 
-  }
+function stackla_load_widget($widget_id) {
+  $stack = stackla_create_stack();
+  $widget = $stack->instance('widget', $widget_id);
 
-  function stackla_load_widget($widget_id) {
-    $stack = stackla_create_stack();
-    $widget = $stack->instance('widget',$widget_id);
+  return $widget;
+}
 
-    return $widget;
-  }
+function stackla_clone_widget($widget) {
+  dpm($widget, 'clone called');
+  $stackla = stackla_create_stack();
+  $clone_parent_id = $widget['clone_parent'];
 
-  function stackla_clone_widget($widget) {
-    dpm($widget,'clone called');
-    $stackla = stackla_create_stack();
-    $clone_parent_id = $widget['clone_parent'];
+  $clone_parent = stackla_load_widget($clone_parent_id);
 
-    $clone_parent = stackla_load_widget($clone_parent_id);
+  $new_widget = $clone_parent->duplicate();
 
-    $new_widget = $clone_parent->duplicate();
+  // update the new widget with the selected type_style.
 
-    // update the new widget with the selected type_style.
+  $new_widget->type_style = $widget['type_style'];
 
-    $new_widget->type_style = $widget['type_style'];
+  $new_widget->filter_id = $widget['filter_id'];
 
-    $new_widget->filter_id = $widget['filter_id'];
+  $new_widget->update();
 
-    $new_widget->update();
+  return $new_widget;
+}
 
-    return $new_widget;
-  }
+function stackla_derive_widget($widget) {
+  $stackla = stackla_create_stack();
 
-  function stackla_derive_widget($widget) {
-    $stackla = stackla_create_stack();
+  $derive_parent_id = $widget['derive_parent'];
 
-    $derive_parent_id = $widget['derive_parent'];
+  $derive_parent = stackla_load_widget($derive_parent_id);
 
-    $derive_parent = stackla_load_widget($derive_parent_id);
+  $new_widget = $derive_parent->derive($widget['filter_id'], $widget['name']);
 
-    $new_widget = $derive_parent->derive($widget['filter_id'],$widget['name']);
-
-    return $new_widget;
-
-  }
+  return $new_widget;
+}
 
 /**
  * Create stack via the Stackla SDK.
