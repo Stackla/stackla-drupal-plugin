@@ -315,7 +315,7 @@ function stackla_update_term($term, $original_term) {
 function stackla_delete_term($term_id) {
   $stack = stackla_create_stack();
 
-  $term = $stack->instance('term', $term_id);
+  $term = $stack->instance('term', $term_id, FALSE);
 
   try {
     $term->delete();
@@ -411,7 +411,7 @@ function stackla_update_filter($filter, $original_filter) {
 function stackla_delete_filter($filter_id) {
   $stack = stackla_create_stack();
 
-  $filter = $stack->instance('filter', $filter_id);
+  $filter = $stack->instance('filter', $filter_id, FALSE);
 
   try {
     $filter->delete();
@@ -570,7 +570,7 @@ function stackla_derive_widget($widget) {
 function stackla_delete_widget($widget_id) {
   $stackla = stackla_create_stack();
 
-  $widget = $stack->instance('widget', $widget_id);
+  $widget = $stack->instance('widget', $widget_id, FALSE);
 
   try {
     $widget->delete();
