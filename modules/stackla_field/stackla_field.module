@@ -457,7 +457,6 @@ function stackla_field_filter_element($key, $filter) {
  * @param array $values
  */
 function stackla_field_term_elements($values, $form_state) {
-  dpm($values,'values in term elements builder');
 
   $term_types = array(
     'user' => array(
@@ -1172,8 +1171,6 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
         // Widget compare and update if neccessary here.
         $original_widget = $original_data[$item_delta]['look_and_feel'];
         if ($data['look_and_feel'] != $original_widget) {
-          dpm($original_widget, 'rigdy');
-          dpm($data['look_and_feel'], 'new one');
           if ($data['look_and_feel']['look_options'] != $original_widget['look_options']) {
             // the widget type has changed, create a new widget with the new type
             $new_widget = stackla_field_create_stackla_widget($data);
@@ -1234,10 +1231,8 @@ function stackla_field_create_stackla_widget($data) {
       break;
 
     case 'clone':
-      dpm('clone!');
       if (stackla_field_widget_data_validate($look_and_feel)) {
         $widget_to_send = stackla_field_prepare_widget($data);
-        dpm($widget_to_send, 'widget to send');
         $new_widget = stackla_clone_widget($widget_to_send);
         // @todo: need some validation here.
         return $new_widget;
