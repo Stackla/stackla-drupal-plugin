@@ -1019,7 +1019,7 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
 
   foreach ($items as $item_delta => $item) {
     $data = unserialize($item['widget_data']);
-
+    $e = 0;
     // Compare terms in new data to original, call stackla if required.
     if (!empty($data['terms'])) {
       foreach ($data['terms'] as $term_delta => $term) {
@@ -1076,6 +1076,11 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
             }
           }
         }
+        else {
+          // This is a junk term, eg a add new button, so we can remove before
+          // saving.
+          unset($data['terms'][$term_delta]);
+        }
       }
     }
 
@@ -1115,6 +1120,11 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
               $data['filter_menu'][$filter_delta]['tag_id'] = $data['tag_id'];
             }
           }
+          else {
+            // It's a trivial entry (add button etc), so we can remove before
+            // saving.
+            unset($data['filter_menu'][$filter_delta]);
+          }
         }
         elseif (!empty($original_data[$item_delta]['filter_menu'][$filter_delta])) {
           $filter['tag_id'] = $data['tag_id'];
@@ -1128,6 +1138,11 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
               $data['filter_menu'][$filter_delta]['tag_id'] = $data['tag_id'];
             }
           }
+        }
+        else {
+          // It's a trivial entry (add button etc), so we can remove before
+          // saving.
+          unset($data['filter_menu'][$filter_delta]);
         }
       }
     }
@@ -1320,7 +1335,7 @@ function stackla_field_tag_prepare($tag_name) {
 function stackla_field_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
   foreach ($items as $item_delta => $item) {
     $data = unserialize($item['widget_data']);
-
+    $e = 0;
     // If there is any data, create a new tag keyed by entity type and id.
     if (!empty($data['terms']) || !empty($data['filter_menu']) || !empty($data['look_and_feel'])) {
       // Create tag.
@@ -1365,6 +1380,10 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
                 )), 'error');
           }
         }
+        elseif(empty($term['name'])) {
+          // It's just the remove button, take it away.
+          unset($data['terms'][$term_delta]);
+        }
       }
     }
 
@@ -1387,6 +1406,10 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
                   )), 'error');
             }
           }
+        }
+        elseif (!empty($filter['add_new'])) {
+          // We don't need to store the 'add new' button, so remove from data.
+          unset($data['filter_menu'][$filter_delta]);
         }
       }
     }
