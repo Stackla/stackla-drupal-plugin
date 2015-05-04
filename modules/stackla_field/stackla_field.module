@@ -457,6 +457,7 @@ function stackla_field_filter_element($key, $filter) {
  * @param array $values
  */
 function stackla_field_term_elements($values, $form_state) {
+  dpm($values,'values in term elements builder');
 
   $term_types = array(
     'user' => array(
@@ -525,12 +526,8 @@ function stackla_field_term_elements($values, $form_state) {
   }
 
   $elements = array();
-  $highest_key = 0;
   if (!empty($values['terms'])) {
     foreach ($values['terms'] as $key => $query) {
-      if ($key > $highest_key) {
-        $highest_key = $key;
-      }
       if (!empty($query['remove_flag'])) {
         $elements[$key]['remove_flag'] = array(
           '#type' => 'hidden',
@@ -716,7 +713,7 @@ function stackla_field_term_elements($values, $form_state) {
       ),
     ),
   );
-  $elements[$highest_key + 1] = $new_select;
+  $elements[] = $new_select;
 
   return $elements;
 }
