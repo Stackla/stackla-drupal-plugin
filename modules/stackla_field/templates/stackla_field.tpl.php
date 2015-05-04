@@ -9,7 +9,6 @@
  *
  */
 ?>
-<?php dpm($data, 'data in template'); ?>
 <div class="stackla-field">
   <h3>Stackla widget: <?php print check_plain($data['name']); ?></h3>
   <?php if(!empty($filters)) : ?>
