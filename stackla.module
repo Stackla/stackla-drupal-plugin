@@ -405,6 +405,15 @@ function stackla_update_filter($filter, $original_filter) {
     dpm($updated_filter->getErrors(), 'error');
   }
 
+  if (!empty($filter['tag_id'])) {
+    $tag = stackla_load_tag($filter['tag_id']);
+    try {
+      $updated_filter->addTag($tag);
+    } catch (Exception $ex) {
+      dpm($updated_filter->getErrors(), 'error adding tag to filter');
+    }
+  }
+
   return $updated_filter;
 }
 

@@ -433,6 +433,13 @@ function stackla_field_filter_element($key, $filter) {
       );
     }
 
+    if (!empty($filter['tag_id'])) {
+      $elements[$key]['tag_id'] = array(
+        '#type' => 'hidden',
+        '#value' => $filter['tag_id'],
+      );
+    }
+
     //If there is data, add a 'remove' button.
     if (!empty($filter)) {
       $elements[$key]['remove'] = array(
@@ -1081,8 +1088,6 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
     }
 
     // Compare filters in new data to original, call stackla  if required.
-    // Note we'll probably have to have some kind of sync/collision stuff in
-    // here at some point.
     if (!empty($data['filter_menu'])) {
       foreach ($data['filter_menu'] as $filter_delta => $filter) {
         if (!empty($filter['remove_flag'])) {
@@ -1124,7 +1129,10 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
         }
         elseif (!empty($original_data[$item_delta]['filter_menu'][$filter_delta])) {
           $filter['tag_id'] = $data['tag_id'];
+          // Compare won't work if remove element is present.
+          stackla_field_filter_remove_remove($filter);
           $original_filter = $original_data[$item_delta]['filter_menu'][$filter_delta];
+          stackla_field_filter_remove_remove($original_filter);
           if ($filter != $original_filter) {
             $stackla_filter = stackla_field_prepare_filter($filter);
             if ($updated_filter = stackla_update_filter($stackla_filter, $original_filter)) {
@@ -1208,6 +1216,12 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
 
     // Serialise the changed data and store.
     $items[$item_delta]['widget_data'] = serialize($data);
+  }
+}
+
+function stackla_field_filter_remove_remove(&$filter) {
+  if (isset($filter['remove'])) {
+    unset($filter['remove']);
   }
 }
 
@@ -1372,7 +1386,7 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
                 )), 'error');
           }
         }
-        elseif(empty($term['name'])) {
+        elseif (empty($term['name'])) {
           // It's just the remove button, take it away.
           unset($data['terms'][$term_delta]);
         }
