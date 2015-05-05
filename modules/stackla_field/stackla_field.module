@@ -115,21 +115,21 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         '#title' => t('Create Terms'),
         '#collapsed' => FALSE,
         '#collapsible' => FALSE,
-        '#prefix' => '<div id="st-terms">',
+        '#prefix' => '<div id="st-terms-' . $delta . '">',
         '#suffix' => '</div>',
       );
 
       $field_name = $field['field_name'];
       if (!empty($form_state['values'][$field_name]['und'][$delta]['widget_data'])) {
         $submitted_data = unserialize($form_state['values'][$field_name]['und'][$delta]['widget_data']);
-        $social_elements = stackla_field_term_elements($submitted_data, $form_state);
-        $filter_elements = stackla_field_filters($submitted_data, $form_state);
-        $look_and_feel = stackla_field_look_elements($submitted_data, $form_state);
+        $social_elements = stackla_field_term_elements($submitted_data, $form_state,$delta);
+        $filter_elements = stackla_field_filters($submitted_data, $form_state,$delta);
+        $look_and_feel = stackla_field_look_elements($submitted_data, $form_state,$delta);
       }
       else {
-        $social_elements = stackla_field_term_elements($value, $form_state);
-        $filter_elements = stackla_field_filters($value, $form_state);
-        $look_and_feel = stackla_field_look_elements($value, $form_state);
+        $social_elements = stackla_field_term_elements($value, $form_state,$delta);
+        $filter_elements = stackla_field_filters($value, $form_state,$delta);
+        $look_and_feel = stackla_field_look_elements($value, $form_state,$delta);
       }
       $widget['terms'] += $social_elements;
 
@@ -138,7 +138,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         '#title' => 'Create Filters',
         '#collapsed' => FALSE,
         '#collapsible' => FALSE,
-        '#prefix' => '<div id="st-filters">',
+        '#prefix' => '<div id="st-filters-' . $delta . '">',
         '#suffix' => '</div>',
       );
 
@@ -149,7 +149,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         '#title' => 'Look and Feel',
         '#collapsed' => FALSE,
         '#collapsible' => FALSE,
-        '#prefix' => '<div id="st-look-feel">',
+        '#prefix' => '<div id="st-look-feel-' . $delta . '">',
         '#suffix' => '</div>',
       );
 
@@ -167,7 +167,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
  * @param type $form_state
  * @return type
  */
-function stackla_field_look_elements($data, $form_state) {
+function stackla_field_look_elements($data, $form_state, $delta) {
   $elements = array();
 
   $elements['look_options'] = array(
@@ -181,7 +181,7 @@ function stackla_field_look_elements($data, $form_state) {
     '#name' => 'widget_radios',
     '#ajax' => array(
       'callback' => 'stackla_field_ajax_widget_callback',
-      'wrapper' => 'st-look-feel',
+      'wrapper' => 'st-look-feel-' . $delta,
       'method' => 'replace',
       'effect' => 'none',
     ),
@@ -294,7 +294,7 @@ function stackla_field_widget_select_options() {
  *  The drupal $form_state (with'values' if this is an ajax rebuild).
  * @return string
  */
-function stackla_field_filters($values, $form_state) {
+function stackla_field_filters($values, $form_state, $delta) {
   $elements = array();
 
   $highest_key = 0;
@@ -316,7 +316,7 @@ function stackla_field_filters($values, $form_state) {
       }
       if (!empty($filter['title'])) {
         if ($key !== $remove_index) {
-          $elements += stackla_field_filter_element($new_key, $filter);
+          $elements += stackla_field_filter_element($new_key, $filter,$delta);
 
           $new_key++;
         }
@@ -330,13 +330,13 @@ function stackla_field_filters($values, $form_state) {
 
   //If we have no elements set (ie new form), create a blank fieldset.
   if (empty($elements)) {
-    $elements += stackla_field_filter_element($highest_key, array());
+    $elements += stackla_field_filter_element($highest_key, array(),$delta);
   }
 
   //If the 'add new filter' button has been pressed, add a new blank fieldset
   if (!empty($form_state['clicked_button'])) {
     if ($form_state['clicked_button']['#name'] == 'filter_add_new') {
-      $elements += stackla_field_filter_element($highest_key, array());
+      $elements += stackla_field_filter_element($highest_key, array(),$delta);
     }
   }
 
@@ -348,7 +348,7 @@ function stackla_field_filters($values, $form_state) {
     '#name' => 'filter_add_new',
     '#ajax' => array(
       'callback' => 'stackla_field_ajax_widget_callback',
-      'wrapper' => 'st-filters',
+      'wrapper' => 'st-filters-' . $delta,
       'method' => 'replace',
       'effect' => 'none',
     ),
@@ -397,7 +397,7 @@ function stackla_field_filter_elements_remove($key, $filter) {
  * @return array
  *  the complete form element render array.
  */
-function stackla_field_filter_element($key, $filter) {
+function stackla_field_filter_element($key, $filter,$delta) {
   $elements = array();
 
   if (!empty($filter['remove_flag'])) {
@@ -477,7 +477,7 @@ function stackla_field_filter_element($key, $filter) {
         '#name' => 'filter-remove-' . $key,
         '#ajax' => array(
           'callback' => 'stackla_field_ajax_widget_callback',
-          'wrapper' => 'st-filters',
+          'wrapper' => 'st-filters-' . $delta,
           'method' => 'replace',
           'effect' => 'none',
         ),
@@ -492,7 +492,7 @@ function stackla_field_filter_element($key, $filter) {
  * Build social form elements from existing data.
  * @param array $values
  */
-function stackla_field_term_elements($values, $form_state) {
+function stackla_field_term_elements($values, $form_state, $delta) {
 
   $term_types = array(
     'user' => array(
@@ -618,7 +618,7 @@ function stackla_field_term_elements($values, $form_state) {
               '#default_value' => (!empty($query['network'])) ? $query['network'] : 0,
               '#ajax' => array(
                 'callback' => 'stackla_field_ajax_widget_callback',
-                'wrapper' => 'st-fieldset',
+                'wrapper' => 'st-terms-' . $delta,
                 'method' => 'replace',
                 'effect' => 'none',
               ),
@@ -657,7 +657,7 @@ function stackla_field_term_elements($values, $form_state) {
               '#default_value' => (!empty($query['type'])) ? $query['type'] : 0,
               '#ajax' => array(
                 'callback' => 'stackla_field_ajax_widget_callback',
-                'wrapper' => 'st-terms',
+                'wrapper' => 'st-terms-' . $delta,
                 'method' => 'replace',
                 'effect' => 'none',
               ),
@@ -706,7 +706,7 @@ function stackla_field_term_elements($values, $form_state) {
             '#name' => 'social-remove-' . $key,
             '#ajax' => array(
               'callback' => 'stackla_field_ajax_widget_callback',
-              'wrapper' => 'st-terms',
+              'wrapper' => 'st-terms-' . $delta,
               'method' => 'replace',
               'effect' => 'none',
             ),
@@ -742,7 +742,7 @@ function stackla_field_term_elements($values, $form_state) {
       //'#name' => 'stackla_social_new',
       '#ajax' => array(
         'callback' => 'stackla_field_ajax_widget_callback',
-        'wrapper' => 'st-terms',
+        'wrapper' => 'st-terms-' . $delta,
         'method' => 'replace',
         'effect' => 'none',
       ),
