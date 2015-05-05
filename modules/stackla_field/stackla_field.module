@@ -31,6 +31,11 @@ function stackla_field_field_widget_info() {
   );
 }
 
+/**
+ * Generate authorisation elements for widget form.
+ *  @return array
+ *    form elements.
+ */
 function stackla_field_authorise_widget() {
   $elements = array(
     '#type' => 'fieldset',
@@ -46,6 +51,10 @@ function stackla_field_authorise_widget() {
   return $elements;
 }
 
+/**
+ * Validate function for widget form if the authorise button is pressed.
+ * Starts the Oauth authorise process.
+ */
 function stackla_field_authorise_validate(&$form, &$form_state) {
 
   //Check if the authenticate button has been pressed.
@@ -191,6 +200,9 @@ function stackla_field_look_elements($data, $form_state) {
   return $elements;
 }
 
+/**
+ * Generate 'look and feel' elements for widget  form.
+ */
 function stackla_field_widget_details($look_and_feel) {
   $elements = array();
 
@@ -233,6 +245,10 @@ function stackla_field_widget_details($look_and_feel) {
   return $elements;
 }
 
+/**
+ * Generate style options for look and feel.
+ * @return array
+ */
 function stackla_field_style_options() {
   // Type is limited to fluid for this version.
 
@@ -247,6 +263,13 @@ function stackla_field_style_options() {
   );
 }
 
+/**
+ * Generate dropdown list of available stackla widgets for cloning or
+ * deriving.
+ *
+ *  @return array
+ *    Form API options array.
+ */
 function stackla_field_widget_select_options() {
   $options = array();
   $widgets = stackla_get_widgets();
@@ -1219,12 +1242,25 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
   }
 }
 
+/**
+ * Clean a filter array of 'remove' element if present.
+ *  @param array $filter
+ *    The filter to clean.
+ */
 function stackla_field_filter_remove_remove(&$filter) {
   if (isset($filter['remove'])) {
     unset($filter['remove']);
   }
 }
 
+/**
+ * Create a widget via stackla API.
+ *
+ *  @param array $data
+ *    submitted form data.
+ *  @return obj
+ *    created widget returned from Stackla.
+ */
 function stackla_field_create_stackla_widget($data) {
   $look_and_feel = $data['look_and_feel'];
   switch ($look_and_feel['look_options']) {
@@ -1463,6 +1499,14 @@ function stackla_field_prepare_filter($filter) {
   return $stackla_filter;
 }
 
+/**
+ * Validate submitted filter element.
+ *
+ *  @param array $filter
+ *    Submitted filter array.
+ *  @return boolean
+ *    TRUE if OK
+ */
 function stackla_field_filter_validate($filter) {
   if (empty($filter['title'])) {
     return FALSE;
@@ -1485,7 +1529,12 @@ function stackla_field_filter_validate($filter) {
 
 /**
  * Utility function: validate a submitted term.
- * @param type $term
+ *
+ *  @param array $term
+ *    Submitted term array.
+ *
+ *  @return bool
+ *    TRUE if OK
  */
 function stackla_field_term_data_validate($term) {
 
