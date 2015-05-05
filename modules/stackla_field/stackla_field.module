@@ -115,6 +115,8 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         '#title' => t('Create Terms'),
         '#collapsed' => FALSE,
         '#collapsible' => FALSE,
+        '#prefix' => '<div id="st-terms">',
+        '#suffix' => '</div>',
       );
 
       $field_name = $field['field_name'];
@@ -136,6 +138,8 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         '#title' => 'Create Filters',
         '#collapsed' => FALSE,
         '#collapsible' => FALSE,
+        '#prefix' => '<div id="st-filters">',
+        '#suffix' => '</div>',
       );
 
       $widget['filter_menu'] += $filter_elements;
@@ -145,6 +149,8 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         '#title' => 'Look and Feel',
         '#collapsed' => FALSE,
         '#collapsible' => FALSE,
+        '#prefix' => '<div id="st-look-feel">',
+        '#suffix' => '</div>',
       );
 
       $widget['look_and_feel'] += $look_and_feel;
@@ -175,9 +181,9 @@ function stackla_field_look_elements($data, $form_state) {
     '#name' => 'widget_radios',
     '#ajax' => array(
       'callback' => 'stackla_field_ajax_widget_callback',
-      'wrapper' => 'st-fieldset',
+      'wrapper' => 'st-look-feel',
       'method' => 'replace',
-      'effect' => 'fade',
+      'effect' => 'none',
     ),
   );
 
@@ -342,9 +348,9 @@ function stackla_field_filters($values, $form_state) {
     '#name' => 'filter_add_new',
     '#ajax' => array(
       'callback' => 'stackla_field_ajax_widget_callback',
-      'wrapper' => 'st-fieldset',
+      'wrapper' => 'st-filters',
       'method' => 'replace',
-      'effect' => 'fade',
+      'effect' => 'none',
     ),
   );
 
@@ -471,9 +477,9 @@ function stackla_field_filter_element($key, $filter) {
         '#name' => 'filter-remove-' . $key,
         '#ajax' => array(
           'callback' => 'stackla_field_ajax_widget_callback',
-          'wrapper' => 'st-fieldset',
+          'wrapper' => 'st-filters',
           'method' => 'replace',
-          'effect' => 'fade',
+          'effect' => 'none',
         ),
       );
     }
@@ -614,7 +620,7 @@ function stackla_field_term_elements($values, $form_state) {
                 'callback' => 'stackla_field_ajax_widget_callback',
                 'wrapper' => 'st-fieldset',
                 'method' => 'replace',
-                'effect' => 'fade',
+                'effect' => 'none',
               ),
             );
           }
@@ -651,9 +657,9 @@ function stackla_field_term_elements($values, $form_state) {
               '#default_value' => (!empty($query['type'])) ? $query['type'] : 0,
               '#ajax' => array(
                 'callback' => 'stackla_field_ajax_widget_callback',
-                'wrapper' => 'st-fieldset',
+                'wrapper' => 'st-terms',
                 'method' => 'replace',
-                'effect' => 'fade',
+                'effect' => 'none',
               ),
             );
           }
@@ -700,9 +706,9 @@ function stackla_field_term_elements($values, $form_state) {
             '#name' => 'social-remove-' . $key,
             '#ajax' => array(
               'callback' => 'stackla_field_ajax_widget_callback',
-              'wrapper' => 'st-fieldset',
+              'wrapper' => 'st-terms',
               'method' => 'replace',
-              'effect' => 'fade',
+              'effect' => 'none',
             ),
           );
         }
@@ -736,9 +742,9 @@ function stackla_field_term_elements($values, $form_state) {
       //'#name' => 'stackla_social_new',
       '#ajax' => array(
         'callback' => 'stackla_field_ajax_widget_callback',
-        'wrapper' => 'st-fieldset',
+        'wrapper' => 'st-terms',
         'method' => 'replace',
-        'effect' => 'fade',
+        'effect' => 'none',
       ),
     ),
   );
@@ -754,8 +760,6 @@ function stackla_field_ajax_widget_callback($form, &$form_state) {
   // gets an array of the path of the triggering element.
   $parents = $form_state['triggering_element']['#array_parents'];
 
-  // removes the triggering element name.
-  array_pop($parents);
   array_pop($parents);
   array_pop($parents);
 
