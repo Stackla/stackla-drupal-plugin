@@ -1195,6 +1195,7 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
                 )), 'status');
             $data['look_and_feel']['stackla_id'] = $new_widget->id;
             $data['look_and_feel']['embed_code'] = $new_widget->embed_code;
+            $data['look_and_feel']['filter_id'] = stackla_field_get_first_filter($data);
           }
           else {
             if (is_object($new_widget)) {
@@ -1211,6 +1212,10 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
         elseif (!empty($original_data[$item_delta]['look_and_feel']['look_options'])) {
           // Widget compare and update if neccessary here.
           $original_widget = $original_data[$item_delta]['look_and_feel'];
+
+          //Update the filter id in case a filter has been deleted.
+          $data['look_and_feel']['filter_id'] = stackla_field_get_first_filter($data);
+
           if ($data['look_and_feel'] != $original_widget) {
             if ($data['look_and_feel']['look_options'] != $original_widget['look_options']) {
               // the widget type has changed, create a new widget with the new type
@@ -1221,6 +1226,7 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
                     )), 'status');
                 $data['look_and_feel']['stackla_id'] = $new_widget->id;
                 $data['look_and_feel']['embed_code'] = $new_widget->embed_code;
+                $data['look_and_feel']['filter_id'] = stackla_field_get_first_filter($data);
               }
               else {
                 if (is_object($new_widget)) {
@@ -1338,15 +1344,26 @@ function stackla_field_prepare_widget($data) {
     $prepared['type_style'] = $look_and_feel['details']['clone_type_style'];
   }
 
-  // Get first element in filter menu array.
-  $filter_values = array_values($data['filter_menu']);
-  $filter = array_shift($filter_values);
-  $prepared['filter_id'] = $filter['stackla_id'];
+  $prepared['filter_id'] = stackla_field_get_first_filter($data);
   if (!empty($look_and_feel['stackla_id'])) {
     $prepared['stackla_id'] = $look_and_feel['stackla_id'];
   }
 
   return $prepared;
+}
+
+/**
+ * Get the id the the first filter in a group
+ * @param array $data
+ *  form data.
+ * @return int
+ *  the first filter id.
+ */
+function stackla_field_get_first_filter($data) {
+  // Get first element in filter menu array.
+  $filter_values = array_values($data['filter_menu']);
+  $filter = array_shift($filter_values);
+  return $filter['stackla_id'];
 }
 
 /**
@@ -1388,7 +1405,6 @@ function stackla_field_tag_prepare($tag_name) {
 function stackla_field_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
   foreach ($items as $item_delta => $item) {
     $data = unserialize($item['widget_data']);
-    $e = 0;
     // If there is any data, create a new tag keyed by entity type and id.
     if (!empty($data['terms']) || !empty($data['filter_menu']) || !empty($data['look_and_feel'])) {
       // Create tag.
@@ -1477,6 +1493,7 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
             )), 'status');
         $data['look_and_feel']['stackla_id'] = $new_widget->id;
         $data['look_and_feel']['embed_code'] = $new_widget->embed_code;
+        $data['look_and_feel']['filter_id'] = stackla_field_get_first_filter($data);
       }
       else {
 
