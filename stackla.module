@@ -74,7 +74,8 @@ function stackla_check_requirements() {
       variable_get('stackla_stack_oauth_host') &&
       variable_get('stackla_stack_name') &&
       variable_get('stackla_client_id') &&
-      variable_get('stackla_client_secret')
+      variable_get('stackla_client_secret') &&
+      stackla_user_rights()
   ) {
     return TRUE;
   }
@@ -165,6 +166,11 @@ function stackla_outh_callback() {
  *  TRUE if authenticated.
  */
 function stackla_is_authenticated() {
+  // First check permissions.
+  if(!stackla_user_rights()) {
+    return FALSE;
+  }
+
   // If the variables are not set, we don't need to check anything else.
   if (!stackla_get_access_token() || !stackla_check_requirements()) {
     return FALSE;
@@ -183,6 +189,16 @@ function stackla_is_authenticated() {
   }
   else {
     return FALSE;
+  }
+}
+
+function stackla_user_rights() {
+  //Check that the current user has the correct permissions set up.
+  if(!(user_access('use stackla')) && !(user_access('administer stackla'))) {
+    return FALSE;
+  }
+  else {
+    return TRUE;
   }
 }
 

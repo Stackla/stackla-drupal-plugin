@@ -87,8 +87,24 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
     }
 
     if (!$authorised) {
-      $widget += stackla_field_authorise_widget();
-      array_unshift($form['#validate'], 'stackla_field_authorise_validate');
+      if(stackla_user_rights()) {
+        $widget += stackla_field_authorise_widget();
+        array_unshift($form['#validate'], 'stackla_field_authorise_validate');
+      }
+      else {
+        $permission_message = t('You do not have permission to use Stackla widgets. Ask your administrator to give you permission.');
+        $widget += array(
+          '#type' => 'fieldset',
+        );
+        $widget['permission'] = array(
+          '#type' => 'markup',
+          '#prefix' => '<div class="no-permission">',
+          '#suffix' => '</div>',
+          '#markup' => $permission_message,
+        );
+        drupal_set_message($permission_message, 'warning');
+      }
+
     }
     else {
       $widget += array(

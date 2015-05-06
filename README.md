@@ -32,4 +32,6 @@ usual location is /sites/all/libraries [download URL, drush instructions]
 3. Download and install the libraries module if required:
 https://www.drupal.org/project/libraries
 
+## Permissions
+
 ## Usage
