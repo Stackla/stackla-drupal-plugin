@@ -330,7 +330,7 @@ function stackla_field_filters($values, $form_state, $delta) {
 
   //If we have no elements set (ie new form), create a blank fieldset.
   if (empty($elements)) {
-    $elements += stackla_field_filter_element($highest_key, array(), $delta);
+    $elements += stackla_field_filter_element(0, array(), $delta);
   }
 
   //If the 'add new filter' button has been pressed, add a new blank fieldset
