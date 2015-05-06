@@ -871,6 +871,13 @@ function stackla_field_element_validate($element, &$form_state) {
         }
       }
     }
+
+    // Widget validation
+    $widgets = $element['look_and_feel'];
+    if(empty($widgets['look_options']['#value'])) {
+      $field_error_name = stackla_field_name_parser($widgets['look_options']['#name'], $field_name);
+      form_set_error($field_error_name, t('Please select your look and feel options'));
+    }
   }
 }
 
@@ -931,9 +938,6 @@ function stackla_field_field_formatter_info() {
     ),
   );
 }
-
-
-
 
 /**
  * Implements hook_field_formatter_view().
