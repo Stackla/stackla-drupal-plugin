@@ -77,8 +77,14 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
   $widget['#delta'] = $delta;
 
   if ($instance['widget']['type'] == 'stackla_field_widget') {
-    // Check if user is authorised
-    $authorised = stackla_is_authenticated();
+    // Check if user is authorised, but only on first form load, not ajax
+    // submits.
+    if (empty($form_state['triggering_element'])) {
+      $authorised = stackla_is_authenticated();
+    }
+    else {
+      $authorised = TRUE;
+    }
 
     if (!$authorised) {
       $widget += stackla_field_authorise_widget();
@@ -95,7 +101,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         '#prefix' => '<div id="st-fieldset">',
         '#suffix' => '</div>',
       );
-
 
       $widget['name'] = array(
         '#type' => 'textfield',
@@ -122,14 +127,14 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       $field_name = $field['field_name'];
       if (!empty($form_state['values'][$field_name]['und'][$delta]['widget_data'])) {
         $submitted_data = unserialize($form_state['values'][$field_name]['und'][$delta]['widget_data']);
-        $social_elements = stackla_field_term_elements($submitted_data, $form_state,$delta);
-        $filter_elements = stackla_field_filters($submitted_data, $form_state,$delta);
-        $look_and_feel = stackla_field_look_elements($submitted_data, $form_state,$delta);
+        $social_elements = stackla_field_term_elements($submitted_data, $form_state, $delta);
+        $filter_elements = stackla_field_filters($submitted_data, $form_state, $delta);
+        $look_and_feel = stackla_field_look_elements($submitted_data, $form_state, $delta);
       }
       else {
-        $social_elements = stackla_field_term_elements($value, $form_state,$delta);
-        $filter_elements = stackla_field_filters($value, $form_state,$delta);
-        $look_and_feel = stackla_field_look_elements($value, $form_state,$delta);
+        $social_elements = stackla_field_term_elements($value, $form_state, $delta);
+        $filter_elements = stackla_field_filters($value, $form_state, $delta);
+        $look_and_feel = stackla_field_look_elements($value, $form_state, $delta);
       }
       $widget['terms'] += $social_elements;
 
@@ -297,8 +302,6 @@ function stackla_field_widget_select_options() {
 function stackla_field_filters($values, $form_state, $delta) {
   $elements = array();
 
-  $highest_key = 0;
-
   // Check if a 'remove' button has been clicked
   $remove_index = 'empty';
   if (!empty($form_state['clicked_button'])) {
@@ -311,12 +314,9 @@ function stackla_field_filters($values, $form_state, $delta) {
   if (!empty($values['filter_menu'])) {
     $new_key = 0;
     foreach ($values['filter_menu'] as $key => $filter) {
-      if ($new_key > $highest_key) {
-        $highest_key = $new_key;
-      }
       if (!empty($filter['title'])) {
         if ($key !== $remove_index) {
-          $elements += stackla_field_filter_element($new_key, $filter,$delta);
+          $elements += stackla_field_filter_element($new_key, $filter, $delta);
 
           $new_key++;
         }
@@ -330,22 +330,21 @@ function stackla_field_filters($values, $form_state, $delta) {
 
   //If we have no elements set (ie new form), create a blank fieldset.
   if (empty($elements)) {
-    $elements += stackla_field_filter_element($highest_key, array(),$delta);
+    $elements += stackla_field_filter_element($highest_key, array(), $delta);
   }
 
   //If the 'add new filter' button has been pressed, add a new blank fieldset
   if (!empty($form_state['clicked_button'])) {
     if ($form_state['clicked_button']['#name'] == 'filter_add_new') {
-      $elements += stackla_field_filter_element($highest_key, array(),$delta);
+      $elements += stackla_field_filter_element(count($elements), array(), $delta);
     }
   }
 
-
-  $highest_key ++;
-  $elements[$highest_key]['add_new'] = array(
+  $elements[]['add_new'] = array(
     '#type' => 'button',
     '#value' => t('Add new filter'),
     '#name' => 'filter_add_new',
+    //'#limit_validation_errors' => array(), //We don't want validation to run when we click this.
     '#ajax' => array(
       'callback' => 'stackla_field_ajax_widget_callback',
       'wrapper' => 'st-filters-' . $delta,
@@ -397,7 +396,7 @@ function stackla_field_filter_elements_remove($key, $filter) {
  * @return array
  *  the complete form element render array.
  */
-function stackla_field_filter_element($key, $filter,$delta) {
+function stackla_field_filter_element($key, $filter, $delta) {
   $elements = array();
 
   if (!empty($filter['remove_flag'])) {
@@ -780,17 +779,6 @@ function stackla_field_field_is_empty($item, $field) {
 }
 
 /**
- * Implements hook_field_validate().
- */
-function stackla_field_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
-  foreach ($items as $delta => $item) {
-    if (!empty($item['widget_data'])) {
-      //@todo: validate field data.
-    }
-  }
-}
-
-/**
  * Field element validation.
  */
 function stackla_field_element_validate($element, &$form_state) {
@@ -812,6 +800,68 @@ function stackla_field_element_validate($element, &$form_state) {
     $value = serialize($values);
     form_set_value($element, $value, $form_state);
   }
+
+  if ($form_state['submitted'] == 1) {
+    if (empty($element['name']['#value'])) {
+      form_set_error($field_name . '][' . $element['#language'] . '][' . $delta . '][widget_data][name', t('You need to give your stack a name'));
+    }
+
+    // Term validation.
+    $terms = element_children($element['terms']);
+    foreach ($terms as $term_delta) {
+      $e = 0;
+      // Ignore the empty 'select network' element.
+      if (!empty($element['terms'][$term_delta]['network']) && ($element['terms'][$term_delta]['network']['#value'] != '0')) {
+        // Make sure type is set
+        if ($element['terms'][$term_delta]['type']['#value'] == '0') {
+          $field_error_name = stackla_field_name_parser($element['terms'][$term_delta]['type']['#name'], $field_name);
+          form_set_error($field_error_name, t('Please select a type for your term'));
+        }
+
+        //Make sure the term has a name
+        if (!empty($element['terms'][$term_delta]['name']) && empty($element['terms'][$term_delta]['name']['#value'])) {
+          $field_error_name = stackla_field_name_parser($element['terms'][$term_delta]['name']['#name'], $field_name);
+          form_set_error($field_error_name, t('Please provide a name for your term'));
+        }
+
+        // Make sure term has a value
+        if (!empty($element['terms'][$term_delta]['value']) && empty($element['terms'][$term_delta]['value']['#value'])) {
+          $field_error_name = stackla_field_name_parser($element['terms'][$term_delta]['value']['#name'], $field_name);
+          form_set_error($field_error_name, t('Please provide a search value for your term'));
+        }
+      }
+    }
+
+    // Filter validation.
+    $filters = element_children($element['filter_menu']);
+    foreach ($filters as $filter_delta) {
+      $filter_element = $element['filter_menu'][$filter_delta];
+      // Ignore 'add new filter' element.
+      if (empty($filter_element['add_new'])) {
+        // Filter should have a title
+        if(empty($filter_element['title']['#value'])) {
+          $field_error_name = stackla_field_name_parser($filter_element['title']['#name'], $field_name);
+          form_set_error($field_error_name, t('Please provide a name for your filter'));
+        }
+        // Filter should have at least one media.
+        if(empty($filter_element['show_media']['#value'])) {
+          $field_error_name = stackla_field_name_parser($filter_element['show_media']['#name'], $field_name);
+          form_set_error($field_error_name, t('Please select media for your filter'));
+        }
+        // Filter should have at least one network.
+        if(empty($filter_element['networks']['#value'])) {
+          $field_error_name = stackla_field_name_parser($filter_element['networks']['#name'], $field_name);
+          form_set_error($field_error_name, t('Please select networks for your filter'));
+        }
+      }
+    }
+  }
+}
+
+function stackla_field_name_parser($name, $field_name) {
+  $parsed_name = str_replace($field_name, $field_name . ']', $name);
+  $parsed_name = substr($parsed_name, 0, -1);
+  return $parsed_name;
 }
 
 /**
