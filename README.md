@@ -32,6 +32,8 @@ usual location is /sites/all/libraries [download URL, drush instructions]
 3. Download and install the libraries module if required:
 https://www.drupal.org/project/libraries
 
+### Create an app in Stackla
+
 ## Permissions
 To use stackla widgets on your site, you must assign appropriate permissions to
 your content managers. There are two permssions available:
@@ -43,5 +45,7 @@ stackla widgets on the site.
 ### Use Stackla
 This allows a user to create and edit stackla widgets on the site, but not to
 configure Stackla API settings.
+
+## Authentication with Stackla
 
 ## Usage

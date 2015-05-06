@@ -746,3 +746,87 @@ function stackla_get_variables() {
   );
   return $credentials;
 }
+
+/**
+ * Implements hook_theme().
+ */
+function stackla_theme($existing, $type, $theme, $path) {
+  return array(
+    'stackla_widget' => array(
+      'variables' => array(
+        'data' => array(),
+        'field_id' => 0,
+      ),
+      'template' => 'templates/stackla_widget'
+    ),
+    'stackla_filters' => array(
+      'variables' => array(
+        'filters' => array(),
+        'field_id' => 0,
+        'widget_id' => NULL,
+      ),
+    ),
+  );
+}
+
+
+/**
+ * Filters list theme function.
+ */
+function theme_stackla_filters($variables) {
+  $output = array();
+  $list_class = '.stackla-filter-list.stackla-id-' . $variables['field_id'];
+  $js = 'jQuery(\'' . $list_class . ' a\').click(function(){
+    StacklaFluidWidget.changeFilter(' . $variables['widget_id'] . ', jQuery(this).attr(\'data-filter-id\'));
+});';
+
+  $filters = $variables['filters'];
+  $filter_list_elements = array();
+  foreach ($filters as $delta => $filter) {
+    if (!empty($filter['title'])) {
+      $filter_id = $filter['stackla_id'];
+      // We don't use l() here because we don't want an href attribute on the
+      // <a> tag.
+      $filter_list_elements[] = sprintf('<a data-filter-id="%s">%s</a>', $filter_id, t($filter['title'])
+      );
+    }
+  }
+  if (!empty($filter_list_elements) && count($filter_list_elements) > 1) {
+    $output = array(
+      '#theme' => 'item_list',
+      '#items' => $filter_list_elements,
+      '#attributes' => array(
+        'class' => array('stackla-filter-list stackla-id-' . $variables['field_id']), //add id here!
+      ),
+      // add attached js here.
+      '#attached' => array(
+        'js' => array(
+          $js => array(
+            'type' => 'inline',
+            'scope' => 'footer',
+          ),
+        ),
+        'css' => array(drupal_get_path('module', 'stackla') . '/css/stackla_filters.css'),
+      ),
+    );
+  }
+
+  $rendered_output = drupal_render($output);
+  return $rendered_output;
+}
+
+
+/**
+ * Implements hook_preprocess_stackla_field().
+ */
+function stackla_preprocess_stackla_widget(&$vars) {
+  if (!empty($vars['data']['filter_menu'])) {
+    $vars['filters'] = array(
+      '#theme' => 'stackla_filters',
+      '#filters' => $vars['data']['filter_menu'],
+      '#field_id' => $vars['field_id'],
+      '#widget_id' => (!empty($vars['data']['look_and_feel']['stackla_id'])) ? $vars['data']['look_and_feel']['stackla_id'] : 0,
+    );
+  }
+  drupal_add_css(drupal_get_path('module', 'stackla') . '/css/stackla_widget.css');
+}
