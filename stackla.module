@@ -169,7 +169,7 @@ function stackla_is_authenticated() {
   if (!stackla_get_access_token() || !stackla_check_requirements()) {
     return FALSE;
   }
-  $stack  = stackla_create_stack();
+  $stack = stackla_create_stack();
 
   $term = $stack->instance('term');
   try {
@@ -178,7 +178,7 @@ function stackla_is_authenticated() {
     //Some sort of fetch error. It doesn't really matter which.
   }
 
-  if($term->getResponseCode() == 200) {
+  if ($term->getResponseCode() == 200) {
     return TRUE;
   }
   else {
@@ -268,7 +268,10 @@ function stackla_create_term($term) {
   try {
     $new_term->create();
   } catch (Exception $ex) {
-    dpm($new_term->getErrors(), 'error creating tag');
+    $error = $new_term->getErrors();
+    watchdog('stackla', 'Error creating term. Error: <pre>@values</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
   }
 
   if (!empty($term['tag_id'])) {
@@ -276,7 +279,10 @@ function stackla_create_term($term) {
     try {
       $new_term->addTag($tag);
     } catch (Exception $ex) {
-      dpm($new_term->getErrors(), 'error adding tag to term');
+      $error = $new_term->getErrors();
+      watchdog('stackla', 'Error adding tag to term. Error: <pre>@values</pre>', array(
+        '@values' => print_r($error, TRUE),
+          ), WATCHDOG_ERROR);
     }
   }
   return $new_term;
@@ -320,9 +326,11 @@ function stackla_update_term($term, $original_term) {
   try {
     $updated_term->update();
   } catch (Exception $ex) {
-    dpm($updated_term->getErrors(), 'error');
+    $error = $updated_term->getErrors();
+    watchdog('stackla', 'Error updating term. Error: <pre>@values</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
   }
-
 
   return $updated_term;
 }
@@ -335,7 +343,10 @@ function stackla_delete_term($term_id) {
   try {
     $term->delete();
   } catch (Exception $ex) {
-    dpm($term->getErrors(), 'error');
+    $error = $term->getErrors();
+    watchdog('stackla', 'Error creating term. Error: <pre>@values</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
   }
 
   return $term;
@@ -376,14 +387,20 @@ function stackla_create_filter($filter) {
     try {
       $new_filter->addTag($tag);
     } catch (Exception $ex) {
-      dpm($new_filter->getErrors(), 'error adding tag to filter');
+      $error = $new_filter->getErrors();
+      watchdog('stackla', 'Error adding tag to filter. Error: <pre>@values</pre>', array(
+        '@values' => print_r($error, TRUE),
+          ), WATCHDOG_ERROR);
     }
   }
 
   try {
     $new_filter->create();
   } catch (Exception $ex) {
-    dpm($new_filter->getErrors(), 'error');
+    $error = $new_filter->getErrors();
+    watchdog('stackla', 'Error creating filter. Error: <pre>@values</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
   }
 
   return $new_filter;
@@ -417,7 +434,9 @@ function stackla_update_filter($filter, $original_filter) {
   try {
     $updated_filter->update();
   } catch (Exception $ex) {
-    dpm($updated_filter->getErrors(), 'error');
+    watchdog('stackla', 'Error updating filter. Values: <pre>@values</pre>', array(
+      '@values' => print_r($filter, TRUE),
+        ), WATCHDOG_ERROR);
   }
 
   if (!empty($filter['tag_id'])) {
@@ -425,7 +444,9 @@ function stackla_update_filter($filter, $original_filter) {
     try {
       $updated_filter->addTag($tag);
     } catch (Exception $ex) {
-      dpm($updated_filter->getErrors(), 'error adding tag to filter');
+      watchdog('stackla', 'Error adding tag to filter. Values: <pre>@values</pre>', array(
+        '@values' => print_r($filter, TRUE),
+          ), WATCHDOG_ERROR);
     }
   }
 
@@ -440,7 +461,9 @@ function stackla_delete_filter($filter_id) {
   try {
     $filter->delete();
   } catch (Exception $ex) {
-    dpm($filter->getErrors(), 'error');
+    watchdog('stackla', 'Error deleting filter. Values: <pre>@values</pre>', array(
+      '@values' => print_r($filter_id, TRUE),
+        ), WATCHDOG_ERROR);
   }
 
   return $filter;
@@ -459,7 +482,9 @@ function stackla_create_tag($tag) {
   try {
     $new_tag->create();
   } catch (Exception $ex) {
-    dpm($new_tag->getErrors(), 'error');
+    watchdog('stackla', 'Error creating tag. Values: <pre>@values</pre>', array(
+      '@values' => print_r($tag, TRUE),
+        ), WATCHDOG_ERROR);
   }
 
   return $new_tag;
@@ -501,7 +526,10 @@ function stackla_create_widget($widget) {
   try {
     $new_widget->create();
   } catch (Exception $ex) {
-    dpm($new_widget->getErrors(), 'exception in create widget:');
+    $error = $new_widget->getErrors();
+    watchdog('stackla', 'Error creating widget. Error: <pre>@error</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
   }
 
   return $new_widget;
@@ -537,12 +565,27 @@ function stackla_update_widget($widget) {
   try {
     $updated_widget->update();
   } catch (Exception $ex) {
-    dpm($updated_widget->getErrors(), 'error');
+    $error = $new_widget->getErrors();
+    watchdog('stackla', 'Error updating widget. Error: <pre>@error</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
   }
 
   return $updated_widget;
 }
 
+/**
+ * Get a list of widgets.
+ *
+ * @param int $limit
+ *  The max number of results desired.
+ * @param int $page
+ *  Desired result page.
+ * @param array $options
+ *  Request options
+ * @return obj
+ *  Stackla widgets object.
+ */
 function stackla_get_widgets($limit = 25, $page = 1, $options = array()) {
   $stack = stackla_create_stack();
   $widgets = $stack->instance('widget');
@@ -552,6 +595,14 @@ function stackla_get_widgets($limit = 25, $page = 1, $options = array()) {
   return $widgets;
 }
 
+/**
+ * Load a widget.
+ *
+ *  @param sting $widget_id
+ *    The id of the widget to load.
+ *  @return obj
+ *    The loaded widget.
+ */
 function stackla_load_widget($widget_id) {
   $stack = stackla_create_stack();
   $widget = $stack->instance('widget', $widget_id);
@@ -559,8 +610,14 @@ function stackla_load_widget($widget_id) {
   return $widget;
 }
 
+/**
+ *  Clone a widget.
+ * @param array $widget
+ *  widget info array.
+ * @return obj
+ *  New widget object.
+ */
 function stackla_clone_widget($widget) {
-  dpm($widget, 'clone called');
   $stackla = stackla_create_stack();
   $clone_parent_id = $widget['clone_parent'];
 
@@ -579,6 +636,14 @@ function stackla_clone_widget($widget) {
   return $new_widget;
 }
 
+/**
+ * Derive a widget from an existing widget.
+ *
+ *  @param array $widget
+ *    The widget info array.
+ *  @return ojb
+ *    The cloned widget.
+ */
 function stackla_derive_widget($widget) {
   $stackla = stackla_create_stack();
 
@@ -591,6 +656,14 @@ function stackla_derive_widget($widget) {
   return $new_widget;
 }
 
+/**
+* Delete a widget.
+ *
+ * @param string $widget_id
+ *  The id of the widget to delete.
+ * @return obj
+ *  The deleted widget.
+ */
 function stackla_delete_widget($widget_id) {
   $stackla = stackla_create_stack();
 
@@ -599,7 +672,10 @@ function stackla_delete_widget($widget_id) {
   try {
     $widget->delete();
   } catch (Exception $ex) {
-    dpm($widget->getErrors(), 'error');
+    $error = $new_widget->getErrors();
+    watchdog('stackla', 'Error deleting widget. Error: <pre>@error</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
   }
 
   return $widget;
