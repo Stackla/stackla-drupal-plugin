@@ -2,6 +2,7 @@ name = Stackla Base
 description = The base module of the Stackla Suite. Connects your drupal site to the Stackla service.
 dependencies[] = libraries
 dependencies[] = encrypt
+configure = admin/config/services/stackla
 package = Stackla
 core = 7.x
 files[] = tests/stackla.test
