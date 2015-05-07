@@ -101,7 +101,13 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
     if (!$authorised) {
       if (stackla_user_rights()) {
         $widget += stackla_field_authorise_widget();
-        array_unshift($form['#validate'], 'stackla_field_authorise_validate');
+        if(!empty($form['#validate'])) {
+          array_unshift($form['#validate'], 'stackla_field_authorise_validate');
+        }
+        else {
+          $form['#validate'] = array('stackla_field_authorise_validate');
+        }
+        
         drupal_set_message(t('You need to authenticate with Stackla to add or edit Stackla info'), 'warning');
       }
       else {
@@ -1464,6 +1470,7 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
           if ($new_filter = stackla_create_filter($stackla_filter)) {
             if ($new_filter->id) {
               $data['filter_menu'][$filter_delta]['stackla_id'] = $new_filter->id;
+               $data['filter_menu'][$filter_delta]['tag_id'] = $data['tag_id'];
               drupal_set_message(t('New filter @filter created in Stackla', array(
                 '@filter' => $filter['title'],
               )));
