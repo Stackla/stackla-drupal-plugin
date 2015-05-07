@@ -79,8 +79,12 @@ function stackla_field_authorise_validate(&$form, &$form_state) {
  * Implements hook_field_widget_form().
  */
 function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
-
-  $value = isset($items[$delta]['widget_data']) ? unserialize($items[$delta]['widget_data']) : array();
+  if(!empty($items[$delta]['widget_data']) && is_string($items[$delta]['widget_data'])) {
+    $value = unserialize($items[$delta]['widget_data']);
+  }
+  else {
+    $value  = array();
+  }
   $widget = $element;
   $widget['#delta'] = $delta;
 
