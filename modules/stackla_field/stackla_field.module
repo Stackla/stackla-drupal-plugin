@@ -838,7 +838,7 @@ function stackla_field_element_validate($element, &$form_state) {
       // Ignore the empty 'select network' element.
       if (!empty($element['terms'][$term_delta]['network']) && ($element['terms'][$term_delta]['network']['#value'] != '0')) {
         // Make sure type is set
-        if ($element['terms'][$term_delta]['type']['#value'] == '0') {
+        if (!empty($element['terms'][$term_delta]['type']) && $element['terms'][$term_delta]['type']['#value'] == '0') {
           $field_error_name = stackla_field_name_parser($element['terms'][$term_delta]['type']['#name'], $field_name);
           form_set_error($field_error_name, t('Please select a type for your term'));
         }
