@@ -38,7 +38,10 @@ function stackla_requirements($phase) {
  */
 function stackla_install() {
   $t = get_t();
-  drupal_set_message($t('Stackla module installed, you must download and extract the Stackla SDK to your libraries folder. See the module README for more information.'), 'status');
+  $config_link = l($t('configure the module'), 'admin/config/services/stackla');
+  drupal_set_message($t('Stackla module installed, you must download and extract the Stackla SDK to your libraries folder. Then !configure here. See the module README for more information.', array(
+    '!configure' => $config_link,
+  )), 'status');
 }
 
 /**
