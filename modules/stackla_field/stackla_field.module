@@ -107,7 +107,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         else {
           $form['#validate'] = array('stackla_field_authorise_validate');
         }
-        
+
         drupal_set_message(t('You need to authenticate with Stackla to add or edit Stackla info'), 'warning');
       }
       else {
@@ -1052,7 +1052,6 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
   foreach ($entity->original->{$field_name}[$entity->language] as $entity_widget_delta => $entity_widget) {
     $original_data[$entity_widget_delta] = unserialize($entity_widget['widget_data']);
   }
-
   // If the user is not authorised to access stackla and tries to edit an
   // entity with stackla data, we need to make sure they don't
   // overwrite everything.
@@ -1062,6 +1061,7 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
   else {
     foreach ($items as $item_delta => $item) {
       $data = unserialize($item['widget_data']);
+      $e = 0;
       // Compare terms in new data to original, call stackla if required.
       if (!empty($data['terms'])) {
         foreach ($data['terms'] as $term_delta => $term) {
@@ -1126,6 +1126,10 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
         }
       }
 
+      // In case we are reverting from a revision, we need to check if there
+      // are any orphaned filters and delete them from stackla if neccessary.
+      stackla_field_filter_orphan_check($data,$original_data,$item_delta);
+
       // Compare filters in new data to original, call stackla  if required.
       if (!empty($data['filter_menu'])) {
         foreach ($data['filter_menu'] as $filter_delta => $filter) {
@@ -1180,6 +1184,23 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
                 )));
                 $data['filter_menu'][$filter_delta]['tag_id'] = $data['tag_id'];
               }
+            }
+          }
+          // Stackla id is set, but does it exist on the server?
+          // It might not if we are reverting a revision.
+          elseif(!stackla_get_filter($filter['stackla_id'])) {
+            if (stackla_field_filter_validate($filter)) {
+              $filter['tag_id'] = $data['tag_id'];
+              $new_filter = stackla_field_create_filter($filter);
+              if ($new_filter->id) {
+                $data['filter_menu'][$filter_delta]['stackla_id'] = $new_filter->id;
+                $data['filter_menu'][$filter_delta]['tag_id'] = $data['tag_id'];
+              }
+            }
+            else {
+              // It's a trivial entry (add button etc), so we can remove before
+              // saving.
+              unset($data['filter_menu'][$filter_delta]);
             }
           }
           else {
@@ -1264,6 +1285,41 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
     }
   }
 }
+
+function stackla_field_filter_orphan_check(&$data,&$original_data,$item_delta) {
+  // Build a list of stackla_ids of existing filters.
+  $original_stackla_ids = array();
+  foreach ($original_data[$item_delta]['filter_menu'] as $original_filter) {
+    if(!empty($original_filter['stackla_id'])) {
+      $original_stackla_ids[$original_filter['stackla_id']] = $original_filter['stackla_id'];
+    }
+  }
+  $new_stackla_ids = array();
+  foreach ($data['filter_menu'] as $new_filter) {
+    if(!empty($new_filter['stackla_id'])) {
+      $new_stackla_ids[] = $new_filter['stackla_id'];
+    }
+  }
+
+  $delete_ids = $original_stackla_ids;
+
+  // Now loop through the original values and check and unset if they are present
+  // in the new list
+  foreach ($original_stackla_ids as $original_id) {
+    if(in_array($original_id, $new_stackla_ids)) {
+      unset($delete_ids[$original_id]);
+    }
+  }
+  //OK, the only remaining ids should be the ones to remove
+  foreach($delete_ids as $id_to_remove) {
+    stackla_delete_filter($id_to_remove);
+    drupal_set_message(t('Filter id @filterid removed',array(
+      '@filterid' => $id_to_remove,
+    )));
+  }
+
+}
+
 
 /**
  * Clean a filter array of 'remove' element if present.

@@ -455,6 +455,24 @@ function stackla_update_filter($filter, $original_filter) {
   return $updated_filter;
 }
 
+function stackla_get_filter($filter_id) {
+  $stack = stackla_create_stack();
+  $filter = $stack->instance('filter');
+  try {
+    $filter->getById($filter_id);
+  } catch (Exception $ex) {
+    //
+  }
+
+  if ($filter->getResponseCode() == 200) {
+    return $filter;
+  }
+  else {
+    return FALSE;
+  }
+
+}
+
 function stackla_delete_filter($filter_id) {
   $stack = stackla_create_stack();
 
