@@ -247,18 +247,6 @@ function stackla_set_access_token($token) {
  */
 function stackla_create_term($term) {
 
-  // Sim mode.
-  if (variable_get('stackla_sim_mode') == 1) {
-    watchdog('stackla', 'Simulating term creation. Values: <pre>@values</pre>', array(
-      '@values' => print_r($term, TRUE),
-        ), WATCHDOG_NOTICE);
-
-    $new_term = new stdClass;
-    $new_term->id = rand(1, 1000);
-
-    return $new_term;
-  }
-
   if (variable_get('stackla_debug_mode') == 1) {
 
     watchdog('stackla', 'Attempting to create term. Values: <pre>@values</pre>', array(
@@ -304,19 +292,17 @@ function stackla_create_term($term) {
   return $new_term;
 }
 
+/**
+ * Update a term.
+ *
+ *  @param array $term
+ *    update term values
+ *  @param array $original_term
+ *    original term values
+ *  @return obj
+ *    update term object from Stackla.
+ */
 function stackla_update_term($term, $original_term) {
-  // Sim mode.
-  if (variable_get('stackla_sim_mode') == 1) {
-    watchdog('stackla', 'Simulating term update. Values: <pre>@values</pre>', array(
-      '@values' => print_r($term, TRUE),
-        ), WATCHDOG_NOTICE);
-
-    $updated_term = new stdClass;
-    $updated_term->id = rand(1, 1000);
-
-    return $updated_term;
-  }
-
   if (variable_get('stackla_debug_mode') == 1) {
 
     watchdog('stackla', 'Attempting to update term. Values: <pre>@values</pre>', array(
