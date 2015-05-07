@@ -1409,7 +1409,7 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
     if (!empty($data['terms']) || !empty($data['filter_menu']) || !empty($data['look_and_feel'])) {
       // Create tag.
       $entity_ids = entity_extract_ids($entity_type, $entity);
-      $tag_name = $entity_type . '-' . $entity_ids[0];
+      $tag_name = preg_replace('@[^a-z0-9-]+@','-', strtolower($data['name'])) . '-' . $entity_type . '-' . $entity_ids[0];
       $tag_to_create = stackla_field_tag_prepare($tag_name);
 
       $new_tag = stackla_create_tag($tag_to_create);
