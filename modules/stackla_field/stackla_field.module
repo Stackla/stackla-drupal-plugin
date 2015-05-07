@@ -95,7 +95,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
     }
 
     if (!$authorised) {
-      if(stackla_user_rights()) {
+      if (stackla_user_rights()) {
         $widget += stackla_field_authorise_widget();
         array_unshift($form['#validate'], 'stackla_field_authorise_validate');
         drupal_set_message(t('You need to authenticate with Stackla to add or edit Stackla info'), 'warning');
@@ -113,7 +113,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         );
         drupal_set_message($permission_message, 'warning');
       }
-
     }
     else {
       $widget += array(
@@ -492,9 +491,7 @@ function stackla_field_filter_element($key, $filter, $delta) {
         '#value' => $filter['tag_id'],
       );
     }
-
-    //If there is data, add a 'remove' button.
-    if (!empty($filter)) {
+    if ($key != 0) {
       $elements[$key]['remove'] = array(
         '#type' => 'button',
         '#value' => t('Remove filter'),
@@ -864,17 +861,17 @@ function stackla_field_element_validate($element, &$form_state) {
       // Ignore 'add new filter' element.
       if (empty($filter_element['add_new'])) {
         // Filter should have a title
-        if(empty($filter_element['title']['#value'])) {
+        if (empty($filter_element['title']['#value'])) {
           $field_error_name = stackla_field_name_parser($filter_element['title']['#name'], $field_name);
           form_set_error($field_error_name, t('Please provide a name for your filter'));
         }
         // Filter should have at least one media.
-        if(!empty($filter_element['show_media']) && empty($filter_element['show_media']['#value'])) {
+        if (!empty($filter_element['show_media']) && empty($filter_element['show_media']['#value'])) {
           $field_error_name = stackla_field_name_parser($filter_element['show_media']['#name'], $field_name);
           form_set_error($field_error_name, t('Please select media for your filter'));
         }
         // Filter should have at least one network.
-        if(!empty($filter_element['networks']) && empty($filter_element['networks']['#value'])) {
+        if (!empty($filter_element['networks']) && empty($filter_element['networks']['#value'])) {
           $field_error_name = stackla_field_name_parser($filter_element['networks']['#name'], $field_name);
           form_set_error($field_error_name, t('Please select networks for your filter'));
         }
@@ -883,7 +880,7 @@ function stackla_field_element_validate($element, &$form_state) {
 
     // Widget validation
     $widgets = $element['look_and_feel'];
-    if(empty($widgets['look_options']['#value'])) {
+    if (empty($widgets['look_options']['#value'])) {
       $field_error_name = stackla_field_name_parser($widgets['look_options']['#name'], $field_name);
       form_set_error($field_error_name, t('Please select your look and feel options'));
     }
