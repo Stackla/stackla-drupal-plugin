@@ -39,7 +39,13 @@ function stackla_field_field_widget_info() {
 function stackla_field_authorise_widget() {
   $elements = array(
     '#type' => 'fieldset',
-    '#title' => t('You must authenticate with Stackla'),
+  );
+
+  $elements['authenticate_desc'] = array(
+    '#markup' => 'button',
+    '#markup' => t('You must authenticate with Stackla'),
+    '#prefix' => '<div>',
+    '#suffix' => '</div>',
   );
 
   $elements['authenticate'] = array(
@@ -47,6 +53,8 @@ function stackla_field_authorise_widget() {
     '#value' => t('Authenticate'),
     '#name' => 'stackla_field_authenticate',
   );
+
+
 
   return $elements;
 }
@@ -90,6 +98,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       if(stackla_user_rights()) {
         $widget += stackla_field_authorise_widget();
         array_unshift($form['#validate'], 'stackla_field_authorise_validate');
+        drupal_set_message(t('You need to authenticate with Stackla to add or edit Stackla info'), 'warning');
       }
       else {
         $permission_message = t('You do not have permission to use Stackla widgets. Ask your administrator to give you permission.');
