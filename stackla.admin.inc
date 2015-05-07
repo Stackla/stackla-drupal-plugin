@@ -8,47 +8,76 @@
  * Stackla Base admin configuration form.
  */
 function stackla_settings_form($form, &$form_state) {
+  global $base_url;
   $form = array();
 
-  $form['stackla_host_name'] = array(
+  $form['for-stackla'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Information for Stackla'),
+  );
+
+  $form['for-stackla']['stackla_oauth_callback'] = array(
+    '#title' => t('Oauth Callback URL for Stackla'),
+    '#type' => 'textfield',
+    '#value' => $base_url . '/admin/config/services/stackla/accesscallback',
+    '#disabled' => TRUE,
+    '#description' => t('You will need this to set up your client app in Stackla'),
+  );
+
+  $form['from-stackla'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Information from Stackla'),
+  );
+
+  $form['from-stackla']['stackla_host_name'] = array(
     '#title' => t('Your Stackla Host Name'),
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => variable_get('stackla_host_name'),
+    '#description' => t('eg https://my.stackla.com/api/ note trailing slash'),
   );
 
-  $form['stackla_stack_oauth_host'] = array(
+  $form['from-stackla']['stackla_stack_oauth_host'] = array(
     '#title' => t('Your Stackla Oauth Host'),
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => variable_get('stackla_stack_oauth_host'),
+    '#description' => t('eg https://api.stackla.com/api/ note trailing slash'),
   );
 
-  $form['stackla_stack_name'] = array(
+  $form['from-stackla']['stackla_stack_name'] = array(
     '#title' => t('Your Stackla Stack Name'),
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => variable_get('stackla_stack_name'),
+    '#description' => t('eg my-stack'),
   );
 
-  $form['stackla_client_id'] = array(
+  $form['from-stackla']['stackla_client_id'] = array(
     '#title' => t('Stackla Client ID'),
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => variable_get('stackla_client_id'),
+    '#description' => t('eg 87c9334cc822d43bc1874c . You can find this in the Stackla "manage clients" interface'),
   );
 
-  $form['stackla_client_secret'] = array(
+  $form['from-stackla']['stackla_client_secret'] = array(
     '#title' => t('Stackla Client Secret'),
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => variable_get('stackla_client_secret'),
+    '#description' => t('You can find this in the Stackla "manage clients" interface'),
+  );
+
+  $form['auth'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Authentication'),
   );
 
   if (stackla_check_requirements()) {
     if (!stackla_is_authenticated()) {
       // Add authentication link.
-      $form['authenticate'] = array(
+      $form['auth']['authenticate'] = array(
         '#type' => 'submit',
         '#value' => t('Authenticate with Stackla'),
         '#op' => 'authenticate',
@@ -57,12 +86,12 @@ function stackla_settings_form($form, &$form_state) {
     }
     else {
       // Add message 'Access token set'!
-      $form['authenticate'] = array(
+      $form['auth']['authenticate'] = array(
         '#type' => 'markup',
         '#markup' => '<p>' . t('Access token set!') . '</p>',
       );
 
-      $form['reauthenticate'] = array(
+      $form['auth']['reauthenticate'] = array(
         '#type' => 'submit',
         '#value' => t('Reuthenticate with Stackla'),
         '#op' => 'authenticate',
