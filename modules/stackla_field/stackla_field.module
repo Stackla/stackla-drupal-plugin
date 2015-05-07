@@ -869,12 +869,12 @@ function stackla_field_element_validate($element, &$form_state) {
           form_set_error($field_error_name, t('Please provide a name for your filter'));
         }
         // Filter should have at least one media.
-        if(empty($filter_element['show_media']['#value'])) {
+        if(!empty($filter_element['show_media']) && empty($filter_element['show_media']['#value'])) {
           $field_error_name = stackla_field_name_parser($filter_element['show_media']['#name'], $field_name);
           form_set_error($field_error_name, t('Please select media for your filter'));
         }
         // Filter should have at least one network.
-        if(empty($filter_element['networks']['#value'])) {
+        if(!empty($filter_element['networks']) && empty($filter_element['networks']['#value'])) {
           $field_error_name = stackla_field_name_parser($filter_element['networks']['#name'], $field_name);
           form_set_error($field_error_name, t('Please select networks for your filter'));
         }
