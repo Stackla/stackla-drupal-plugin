@@ -473,6 +473,42 @@ function stackla_get_filter($filter_id) {
 
 }
 
+/**
+ * Delete a stackla element
+ *
+ *  @param string $element
+ *    The name of the element to delete.
+ *    Can be 'filter' , 'term' , 'widget' , 'tag'.
+ *  @param string $filter_id
+ *    The id of the element to delete.
+ *  @return obj
+ *    The deleted elemnt or FALSE.
+ */
+function stackla_delete_element($element,$filter_id) {
+
+  // Validate element.
+  $valid_elements  = array('filter','term','widget','tag');
+  if(!in_array($element, $valid_elements)) {
+    return FALSE;
+  }
+
+  $stack = stackla_create_stack();
+
+  $model = $stack->instance($element, $filter_id, FALSE);
+
+  try {
+    $model->delete();
+  } catch (Exception $ex) {
+    watchdog('stackla', 'Error deleting @name. Values: <pre>@values</pre>', array(
+      '@name' => $element,
+      '@values' => print_r($filter_id, TRUE),
+        ), WATCHDOG_ERROR);
+  }
+
+  return $model;
+}
+
+
 function stackla_delete_filter($filter_id) {
   $stack = stackla_create_stack();
 

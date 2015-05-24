@@ -1128,7 +1128,11 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
 
       // In case we are reverting from a revision, we need to check if there
       // are any orphaned filters and delete them from stackla if neccessary.
-      stackla_field_filter_orphan_check($data,$original_data,$item_delta);
+      $filter_element = array(
+        'name' => 'filter',
+        'key' => 'filter_menu',
+      );
+      stackla_field_element_orphan_check($filter_element,$data,$original_data,$item_delta);
 
       // Compare filters in new data to original, call stackla  if required.
       if (!empty($data['filter_menu'])) {
@@ -1284,6 +1288,41 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
       $items[$item_delta]['widget_data'] = serialize($data);
     }
   }
+}
+
+function stackla_field_element_orphan_check($element,&$data,&$original_data,$item_delta) {
+  // Build a list of stackla_ids of existing filters.
+  $original_stackla_ids = array();
+  foreach ($original_data[$item_delta][$element['key']] as $original_filter) {
+    if(!empty($original_filter['stackla_id'])) {
+      $original_stackla_ids[$original_filter['stackla_id']] = $original_filter['stackla_id'];
+    }
+  }
+  $new_stackla_ids = array();
+  foreach ($data[$element['key']] as $new_filter) {
+    if(!empty($new_filter['stackla_id'])) {
+      $new_stackla_ids[] = $new_filter['stackla_id'];
+    }
+  }
+
+  $delete_ids = $original_stackla_ids;
+
+  // Now loop through the original values and check and unset if they are present
+  // in the new list
+  foreach ($original_stackla_ids as $original_id) {
+    if(in_array($original_id, $new_stackla_ids)) {
+      unset($delete_ids[$original_id]);
+    }
+  }
+  //OK, the only remaining ids should be the ones to remove
+  foreach($delete_ids as $id_to_remove) {
+    stackla_delete_element($element['name'],$id_to_remove);
+    drupal_set_message(t('@name id @filterid removed',array(
+      '@name' => $element['name'],
+      '@filterid' => $id_to_remove,
+    )));
+  }
+
 }
 
 function stackla_field_filter_orphan_check(&$data,&$original_data,$item_delta) {
