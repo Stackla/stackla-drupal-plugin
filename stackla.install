@@ -42,6 +42,11 @@ function stackla_install() {
   drupal_set_message($t('Stackla module installed, you must download and extract the Stackla SDK to your libraries folder. Then !configure here. See the module README for more information.', array(
     '!configure' => $config_link,
   )), 'status');
+
+  // These variables are not exposed in the admin configuration,
+  // but they are available to change for internal development purposes.
+  variable_set('stackla_host_name','https://api.stackla.com/api/');
+  variable_set('stackla_stack_oauth_host','https://api.stackla.com/api/');
 }
 
 /**

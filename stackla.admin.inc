@@ -29,22 +29,6 @@ function stackla_settings_form($form, &$form_state) {
     '#title' => t('Information from Stackla'),
   );
 
-  $form['from-stackla']['stackla_host_name'] = array(
-    '#title' => t('Your Stackla Host Name'),
-    '#type' => 'textfield',
-    '#required' => TRUE,
-    '#default_value' => variable_get('stackla_host_name'),
-    '#description' => t('eg https://my.stackla.com/api/ note trailing slash'),
-  );
-
-  $form['from-stackla']['stackla_stack_oauth_host'] = array(
-    '#title' => t('Your Stackla Oauth Host'),
-    '#type' => 'textfield',
-    '#required' => TRUE,
-    '#default_value' => variable_get('stackla_stack_oauth_host'),
-    '#description' => t('eg https://api.stackla.com/api/ note trailing slash'),
-  );
-
   $form['from-stackla']['stackla_stack_name'] = array(
     '#title' => t('Your Stackla Stack Name'),
     '#type' => 'textfield',
