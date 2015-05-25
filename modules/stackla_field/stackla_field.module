@@ -1024,6 +1024,12 @@ function stackla_field_field_delete($entity_type, $entity, $field, $instance, $l
     if (!empty($data['look_and_feel']) && !empty($data['look_and_feel']['look_options'])) {
       stackla_field_delete_widget($data['look_and_feel']);
     }
+
+    // Delete tag
+    if(!empty($data['tag_id'])) {
+      stackla_delete_tag($data['tag_id']);
+    }
+
   }
 }
 

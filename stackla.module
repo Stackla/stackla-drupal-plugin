@@ -337,6 +337,13 @@ function stackla_update_term($term, $original_term) {
   return $updated_term;
 }
 
+/**
+ *
+ * Delete a term.
+ * 
+ * @param type $term_id
+ * @return type
+ */
 function stackla_delete_term($term_id) {
   $stack = stackla_create_stack();
 
@@ -352,6 +359,26 @@ function stackla_delete_term($term_id) {
   }
 
   return $term;
+}
+
+/**
+ * Delete a tag.
+ */
+function stackla_delete_tag($tag_id) {
+  $stack = stackla_create_stack();
+
+  $tag = $stack->instance('tag', $tag_id, FALSE);
+
+  try {
+    $tag->delete();
+  } catch (Exception $ex) {
+    $error = $tag->getErrors();
+    watchdog('stackla', 'Error deleting tag. Error: <pre>@values</pre>', array(
+      '@values' => print_r($error, TRUE),
+        ), WATCHDOG_ERROR);
+  }
+
+  return $tag;
 }
 
 /**
