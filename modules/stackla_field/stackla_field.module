@@ -136,6 +136,11 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         '#suffix' => '</div>',
       );
 
+      //CSS
+      $css = drupal_get_path('module','stackla_field') . '/css/stackla_field_widget.css';
+
+      $widget['#attached']['css'] = array($css);
+
       $widget['name'] = array(
         '#type' => 'hidden',
         '#default_value' => (!empty($value['name'])) ? $value['name'] : '',
@@ -155,6 +160,9 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         '#collapsible' => FALSE,
         '#prefix' => '<div id="st-terms-' . $delta . '">',
         '#suffix' => '</div>',
+        '#attributes' => array(
+          'class' => array('terms-fieldset'),
+        ),
       );
 
       $field_name = $field['field_name'];
@@ -178,13 +186,16 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         '#collapsible' => FALSE,
         '#prefix' => '<div id="st-filters-' . $delta . '">',
         '#suffix' => '</div>',
+        '#attributes' => array(
+          'class' => array('filters-fieldset'),
+        ),
       );
 
       $widget['filter_menu'] += $filter_elements;
 
       $widget['look_and_feel'] = array(
         '#type' => 'fieldset',
-        '#title' => 'Look and Feel',
+        '#title' => t('Appearance'),
         '#collapsed' => FALSE,
         '#collapsible' => FALSE,
         '#prefix' => '<div id="st-look-feel-' . $delta . '">',
@@ -208,6 +219,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
 function stackla_field_look_elements($data, $form_state, $delta) {
   $elements = array();
 
+
   $elements['look_options'] = array(
     '#type' => 'radios',
     '#options' => array(
@@ -224,6 +236,12 @@ function stackla_field_look_elements($data, $form_state, $delta) {
       'effect' => 'none',
     ),
   );
+
+  $elements['look_options']['new']['#description'] = t('Create a completely new Widget instance from scratch.');
+
+  $elements['look_options']['derive']['#description'] = t('Use an existing widget as a base for the new one, but change the content that is displayed through it. Changes made to display settings of the existing widget will affect the display of this new one.');
+
+  $elements['look_options']['clone']['#description'] = t('Create a new widget, but use the settings from an existing widget. Changes made to this new widget will not affect the widget you are copying from, nor will changes to the widget you are copying from affect this new one.');
 
   if (!empty($data['look_and_feel']['stackla_id'])) {
     $elements['stackla_id'] = array(
@@ -438,38 +456,17 @@ function stackla_field_filter_element($key, $filter, $delta) {
   else {
     $elements[$key] = array(
       '#type' => 'fieldset',
+      '#attributes' => array(
+        'class' => array('filter-set'),
+      ),
     );
 
     //title
     $elements[$key]['title'] = array(
-      '#title' => t('Title'),
+      '#title' => t('Filter Name'),
       '#type' => 'textfield',
+      '#size' => 25,
       '#default_value' => (!empty($filter['title'])) ? $filter['title'] : '',
-    );
-
-
-    //sort by
-    $elements[$key]['sort'] = array(
-      '#type' => 'select',
-      '#options' => array(
-        'source_created_at_desc' => t('Latest'),
-        'score_desc' => t('Greatest'),
-        'votes_desc' => t('Votes'),
-        'random' => t('Random'),
-      ),
-      '#default_value' => (!empty($filter['sort'])) ? $filter['sort'] : '',
-    );
-
-    // show media
-    $elements[$key]['show_media'] = array(
-      '#type' => 'checkboxes',
-      '#title' => t('Show Media'),
-      '#options' => array(
-        'text' => t('Text only'),
-        'image' => t('Images'),
-        'video' => t('Video'),
-      ),
-      '#default_value' => (!empty($filter['show_media'])) ? $filter['show_media'] : array(),
     );
 
     // networks
@@ -485,6 +482,40 @@ function stackla_field_filter_element($key, $filter, $delta) {
         'youtube' => t('YouTube'),
       ),
       '#default_value' => (!empty($filter['networks'])) ? $filter['networks'] : array(),
+      '#attributes' => array(
+        'class' => array('filter-networks'),
+      ),
+    );
+
+    // show media
+    $elements[$key]['show_media'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Show Media'),
+      '#options' => array(
+        'text' => t('Text only'),
+        'image' => t('Images'),
+        'video' => t('Video'),
+      ),
+      '#default_value' => (!empty($filter['show_media'])) ? $filter['show_media'] : array(),
+      '#attributes' => array(
+        'class' => array('filter-show-media'),
+      ),
+    );
+
+    //sort by
+    $elements[$key]['sort'] = array(
+      '#title' => t('Sort by'),
+      '#type' => 'select',
+      '#options' => array(
+        'source_created_at_desc' => t('Latest'),
+        'score_desc' => t('Greatest'),
+        'votes_desc' => t('Votes'),
+        'random' => t('Random'),
+      ),
+      '#default_value' => (!empty($filter['sort'])) ? $filter['sort'] : '',
+      '#attributes' => array(
+        'class' => array('filter-sort-by'),
+      ),
     );
 
     if (!empty($filter['stackla_id'])) {
@@ -615,6 +646,9 @@ function stackla_field_term_elements($values, $form_state, $delta) {
         if ($key !== $remove_index) {
           $elements[$key] = array(
             '#type' => 'fieldset',
+            '#attributes' => array(
+              'class' => array('stackla-term-fieldset'),
+            ),
           );
 
           if (!empty($query['type'])) {
@@ -631,13 +665,14 @@ function stackla_field_term_elements($values, $form_state, $delta) {
               '#type' => 'hidden',
               '#value' => (!empty($query['network'])) ? $query['network'] : 0,
             );
+            $network_header = '<div class="header">' . t('Network') . '</div>';
+            $network_details_name = (!empty($query['network'])) ? $network_options[$query['network']] : 0;
+            $network_details = '<div class="details">' . $network_details_name . '</div>';
             $elements[$key]['network_display'] = array(
               '#type' => 'markup',
-              '#markup' => t('Network: @network', array(
-                '@network' => (!empty($query['network'])) ? $network_options[$query['network']] : 0,
-              )),
-              '#prefix' => '<p>',
-              '#suffix' => '</p>',
+              '#markup' => $network_header . $network_details,
+              '#prefix' => '<div class="network-name static">',
+              '#suffix' => '</div>',
             );
           }
           else {
@@ -669,14 +704,14 @@ function stackla_field_term_elements($values, $form_state, $delta) {
               '#type' => 'hidden',
               '#value' => (!empty($query['type'])) ? $query['type'] : 0,
             );
-
+            $term_type_header = '<div class="header">' . t('Term Type') . '</div>';
+            $term_type_details_name = (!empty($query['type'])) ? $type_options[$query['type']] : 0;
+            $term_type_details = '<div class="details">' . $term_type_details_name . '</div>';
             $elements[$key]['type_display'] = array(
               '#type' => 'markup',
-              '#markup' => t('Type: @type', array(
-                '@type' => (!empty($query['type'])) ? $type_options[$query['type']] : 0,
-              )),
-              '#prefix' => '<p>',
-              '#suffix' => '</p>',
+              '#markup' => $term_type_header . $term_type_details,
+              '#prefix' => '<div class="term-type static">',
+              '#suffix' => '</div>',
             );
           }
           else {
@@ -696,7 +731,7 @@ function stackla_field_term_elements($values, $form_state, $delta) {
           // Only show these fields after the type has been selected.
           if (!empty($query['type'])) {
             //
-            $value_field_title = t('@network @type:', array(
+            $value_field_title = t('@network @type', array(
               '@network' => $social_networks[$query['network']]['name'],
               '@type' => $term_types[$query['type']]['name'],
             ));
@@ -704,6 +739,10 @@ function stackla_field_term_elements($values, $form_state, $delta) {
               '#title' => $value_field_title,
               '#type' => 'textfield',
               '#default_value' => (!empty($query['value'])) ? $query['value'] : '',
+              '#attributes' => array(
+                'class' => array('stackla-term-type', $query['type']),
+              ),
+              '#prefix' => '<div class="prefix">' . $term_types[$query['type']]['prefix'] . '</div>'
             );
             if (empty($query['value'])) {
               $elements[$key]['value']['#attributes'] = array(
@@ -720,11 +759,9 @@ function stackla_field_term_elements($values, $form_state, $delta) {
             );
           }
 
-
-
           $elements[$key]['remove'] = array(
             '#type' => 'button',
-            '#value' => t('Remove'),
+            '#value' => t('Remove this term'),
             '#name' => 'social-remove-' . $key,
             '#ajax' => array(
               'callback' => 'stackla_field_ajax_widget_callback',
@@ -758,6 +795,7 @@ function stackla_field_term_elements($values, $form_state, $delta) {
 
   $new_select = array(
     'network' => array(
+      '#title' => t('Add a new term'),
       '#type' => 'select',
       '#options' => $initial_network_options,
       '#default_value' => 0,
@@ -876,6 +914,12 @@ function stackla_field_element_validate($element, &$form_state) {
   }
 }
 
+/**
+ * Helper function - find a field name.
+ * @param string $name
+ * @param string $field_name
+ * @return string
+ */
 function stackla_field_name_parser($name, $field_name) {
   $parsed_name = str_replace($field_name, $field_name . ']', $name);
   $parsed_name = substr($parsed_name, 0, -1);

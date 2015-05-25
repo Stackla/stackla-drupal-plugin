@@ -21,20 +21,20 @@ function stackla_settings_form($form, &$form_state) {
     '#type' => 'textfield',
     '#value' => $base_url . '/admin/config/services/stackla/accesscallback',
     '#disabled' => TRUE,
-    '#description' => t('You will need this to set up your client app in Stackla'),
+    '#description' => t('Configure the following in the Drupal Plugin instance in your Stack.'),
   );
 
   $form['from-stackla'] = array(
     '#type' => 'fieldset',
     '#title' => t('Information from Stackla'),
+    '#description' => t('Please find the information for the following fields in the Drupal Plugin instance in your Stack.'),
   );
 
   $form['from-stackla']['stackla_stack_name'] = array(
-    '#title' => t('Your Stackla Stack Name'),
+    '#title' => t('Stack Short Name'),
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => variable_get('stackla_stack_name'),
-    '#description' => t('eg my-stack'),
   );
 
   $form['from-stackla']['stackla_client_id'] = array(
@@ -42,7 +42,6 @@ function stackla_settings_form($form, &$form_state) {
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => variable_get('stackla_client_id'),
-    '#description' => t('eg 87c9334cc822d43bc1874c . You can find this in the Stackla "manage clients" interface'),
   );
 
   $form['from-stackla']['stackla_client_secret'] = array(
@@ -50,7 +49,6 @@ function stackla_settings_form($form, &$form_state) {
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => variable_get('stackla_client_secret'),
-    '#description' => t('You can find this in the Stackla "manage clients" interface'),
   );
 
   $form['auth'] = array(
@@ -63,7 +61,7 @@ function stackla_settings_form($form, &$form_state) {
       // Add authentication link.
       $form['auth']['authenticate'] = array(
         '#type' => 'submit',
-        '#value' => t('Authenticate with Stackla'),
+        '#value' => t('Sign in as a Stackla user'),
         '#op' => 'authenticate',
         '#submit' => array('stackla_authenticate'),
       );
@@ -72,12 +70,12 @@ function stackla_settings_form($form, &$form_state) {
       // Add message 'Access token set'!
       $form['auth']['authenticate'] = array(
         '#type' => 'markup',
-        '#markup' => '<p>' . t('Access token set!') . '</p>',
+        '#markup' => '<p>' . t('Signed in successfully') . '</p>',
       );
 
       $form['auth']['reauthenticate'] = array(
         '#type' => 'submit',
-        '#value' => t('Reuthenticate with Stackla'),
+        '#value' => t('Sign in as a different user'),
         '#op' => 'authenticate',
         '#submit' => array('stackla_admin_authenticate'),
       );

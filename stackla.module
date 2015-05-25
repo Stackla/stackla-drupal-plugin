@@ -59,11 +59,11 @@ function stackla_menu() {
 function stackla_permission() {
   return array(
     'administer stackla' => array(
-      'title' => t('Administer stackla'),
-      'description' => t('Configure Stackla module'),
+      'title' => t('Administer Stackla Module'),
+      'description' => t('Configure Stackla Module'),
     ),
     'use stackla' => array(
-      'title' => t('Use Stackla'),
+      'title' => t('Use Stackla Module'),
       'description' => t('Create, edit and delete stackla widgets'),
     ),
   );
@@ -869,4 +869,35 @@ function stackla_preprocess_stackla_widget(&$vars) {
     );
   }
   drupal_add_css(drupal_get_path('module', 'stackla') . '/css/stackla_widget.css');
+}
+
+function stackla_theme_registry_alter(&$theme_registry) {
+  $theme_registry['form_element']['theme path'] = drupal_get_path('module','stackla');
+  $theme_registry['form_element']['function'] = 'stackla_field_form_element';
+
+  $theme_registry['form_element_label']['theme path'] = drupal_get_path('module','stackla');
+  $theme_registry['form_element_label']['function'] = 'stackla_form_element_label';
+
+}
+
+function stackla_field_form_element($variables) {
+  $element = $variables['element'];
+  if (isset($element['#name'])) {
+    switch ($element['#name']) {
+      case 'stackla_oauth_callback':
+        $variables['element']['#description_top'] = $variables['element']['#description'];
+        unset($variables['element']['#description']);
+        break;
+    }
+  }
+  return theme_form_element($variables);
+}
+
+function stackla_form_element_label($variables) {
+  $output = theme_form_element_label($variables);
+  $element = $variables['element'];
+  if (isset($element['#description_top'])) {
+    $output .= '<div class="description">' . $element['#description_top'] . "</div>\n";
+  }
+  return $output;
 }
