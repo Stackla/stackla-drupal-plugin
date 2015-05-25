@@ -79,11 +79,11 @@ function stackla_field_authorise_validate(&$form, &$form_state) {
  * Implements hook_field_widget_form().
  */
 function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
-  if(!empty($items[$delta]['widget_data']) && is_string($items[$delta]['widget_data'])) {
+  if (!empty($items[$delta]['widget_data']) && is_string($items[$delta]['widget_data'])) {
     $value = unserialize($items[$delta]['widget_data']);
   }
   else {
-    $value  = array();
+    $value = array();
   }
   $widget = $element;
   $widget['#delta'] = $delta;
@@ -101,7 +101,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
     if (!$authorised) {
       if (stackla_user_rights()) {
         $widget += stackla_field_authorise_widget();
-        if(!empty($form['#validate'])) {
+        if (!empty($form['#validate'])) {
           array_unshift($form['#validate'], 'stackla_field_authorise_validate');
         }
         else {
@@ -137,8 +137,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       );
 
       $widget['name'] = array(
-        '#type' => 'textfield',
-        '#title' => t('The title for your stackla widget'),
+        '#type' => 'hidden',
         '#default_value' => (!empty($value['name'])) ? $value['name'] : '',
       );
 
@@ -620,9 +619,8 @@ function stackla_field_term_elements($values, $form_state, $delta) {
 
           if (!empty($query['type'])) {
             $elements[$key]['name'] = array(
-              '#title' => t('Term name'),
-              '#type' => 'textfield',
-              '#default_value' => (!empty($query['name'])) ? $query['name'] : '',
+              '#type' => 'hidden',
+              '#value' => (!empty($query['name'])) ? $query['name'] : '',
             );
           }
 
@@ -710,13 +708,6 @@ function stackla_field_term_elements($values, $form_state, $delta) {
             if (empty($query['value'])) {
               $elements[$key]['value']['#attributes'] = array(
                 'placeholder' => t('Enter value'),
-              );
-            }
-
-
-            if (empty($query['name'])) {
-              $elements[$key]['name']['#attributes'] = array(
-                'placeholder' => t('Enter a name for your term'),
               );
             }
           }
@@ -834,14 +825,9 @@ function stackla_field_element_validate($element, &$form_state) {
   }
 
   if ($form_state['submitted'] == 1) {
-    if (empty($element['name']['#value'])) {
-      form_set_error($field_name . '][' . $element['#language'] . '][' . $delta . '][widget_data][name', t('You need to give your stack a name'));
-    }
-
     // Term validation.
     $terms = element_children($element['terms']);
     foreach ($terms as $term_delta) {
-      $e = 0;
       // Ignore the empty 'select network' element.
       if (!empty($element['terms'][$term_delta]['network']) && ($element['terms'][$term_delta]['network']['#value'] != '0')) {
         // Make sure type is set
@@ -849,13 +835,6 @@ function stackla_field_element_validate($element, &$form_state) {
           $field_error_name = stackla_field_name_parser($element['terms'][$term_delta]['type']['#name'], $field_name);
           form_set_error($field_error_name, t('Please select a type for your term'));
         }
-
-        //Make sure the term has a name
-        if (!empty($element['terms'][$term_delta]['name']) && empty($element['terms'][$term_delta]['name']['#value'])) {
-          $field_error_name = stackla_field_name_parser($element['terms'][$term_delta]['name']['#name'], $field_name);
-          form_set_error($field_error_name, t('Please provide a name for your term'));
-        }
-
         // Make sure term has a value
         if (!empty($element['terms'][$term_delta]['value']) && empty($element['terms'][$term_delta]['value']['#value'])) {
           $field_error_name = stackla_field_name_parser($element['terms'][$term_delta]['value']['#name'], $field_name);
@@ -1090,6 +1069,8 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
           // if the term is complete but does not have a stackla_id, create a new
           // term in stackla.
           elseif (empty($term['stackla_id']) && stackla_field_term_data_validate($term)) {
+            $name_prefix = stackla_field_generate_name($entity, $entity_type);
+            $term['name'] = $name_prefix . '-' . $term['network'] . '-' . $term['type'] . '-' . $term['value'];
             $term['tag_id'] = $data['tag_id'];
             $new_term = stackla_create_term($term);
             if ($new_term->id) {
@@ -1110,6 +1091,9 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
             $original_term = $original_data[$item_delta]['terms'][$term_delta];
             if ($term != $original_term) {
               if (!empty($original_term['stackla_id'])) {
+                // Re-generate term name
+                $name_prefix = stackla_field_generate_name($entity, $entity_type);
+                $term['name'] = $name_prefix . '-' . $term['network'] . '-' . $term['type'] . '-' . $term['value'];
                 if ($updated_term = stackla_update_term($term, $original_term)) {
                   drupal_set_message(t('Term @term updated in Stackla', array(
                     '@term' => $term['name'],
@@ -1132,7 +1116,7 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
         'name' => 'filter',
         'key' => 'filter_menu',
       );
-      stackla_field_element_orphan_check($filter_element,$data,$original_data,$item_delta);
+      stackla_field_element_orphan_check($filter_element, $data, $original_data, $item_delta);
 
       // Compare filters in new data to original, call stackla  if required.
       if (!empty($data['filter_menu'])) {
@@ -1192,7 +1176,7 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
           }
           // Stackla id is set, but does it exist on the server?
           // It might not if we are reverting a revision.
-          elseif(!stackla_get_filter($filter['stackla_id'])) {
+          elseif (!stackla_get_filter($filter['stackla_id'])) {
             if (stackla_field_filter_validate($filter)) {
               $filter['tag_id'] = $data['tag_id'];
               $new_filter = stackla_field_create_filter($filter);
@@ -1290,17 +1274,17 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
   }
 }
 
-function stackla_field_element_orphan_check($element,&$data,&$original_data,$item_delta) {
+function stackla_field_element_orphan_check($element, &$data, &$original_data, $item_delta) {
   // Build a list of stackla_ids of existing filters.
   $original_stackla_ids = array();
   foreach ($original_data[$item_delta][$element['key']] as $original_filter) {
-    if(!empty($original_filter['stackla_id'])) {
+    if (!empty($original_filter['stackla_id'])) {
       $original_stackla_ids[$original_filter['stackla_id']] = $original_filter['stackla_id'];
     }
   }
   $new_stackla_ids = array();
   foreach ($data[$element['key']] as $new_filter) {
-    if(!empty($new_filter['stackla_id'])) {
+    if (!empty($new_filter['stackla_id'])) {
       $new_stackla_ids[] = $new_filter['stackla_id'];
     }
   }
@@ -1310,32 +1294,31 @@ function stackla_field_element_orphan_check($element,&$data,&$original_data,$ite
   // Now loop through the original values and check and unset if they are present
   // in the new list
   foreach ($original_stackla_ids as $original_id) {
-    if(in_array($original_id, $new_stackla_ids)) {
+    if (in_array($original_id, $new_stackla_ids)) {
       unset($delete_ids[$original_id]);
     }
   }
   //OK, the only remaining ids should be the ones to remove
-  foreach($delete_ids as $id_to_remove) {
-    stackla_delete_element($element['name'],$id_to_remove);
-    drupal_set_message(t('@name id @filterid removed',array(
+  foreach ($delete_ids as $id_to_remove) {
+    stackla_delete_element($element['name'], $id_to_remove);
+    drupal_set_message(t('@name id @filterid removed', array(
       '@name' => $element['name'],
       '@filterid' => $id_to_remove,
     )));
   }
-
 }
 
-function stackla_field_filter_orphan_check(&$data,&$original_data,$item_delta) {
+function stackla_field_filter_orphan_check(&$data, &$original_data, $item_delta) {
   // Build a list of stackla_ids of existing filters.
   $original_stackla_ids = array();
   foreach ($original_data[$item_delta]['filter_menu'] as $original_filter) {
-    if(!empty($original_filter['stackla_id'])) {
+    if (!empty($original_filter['stackla_id'])) {
       $original_stackla_ids[$original_filter['stackla_id']] = $original_filter['stackla_id'];
     }
   }
   $new_stackla_ids = array();
   foreach ($data['filter_menu'] as $new_filter) {
-    if(!empty($new_filter['stackla_id'])) {
+    if (!empty($new_filter['stackla_id'])) {
       $new_stackla_ids[] = $new_filter['stackla_id'];
     }
   }
@@ -1345,20 +1328,18 @@ function stackla_field_filter_orphan_check(&$data,&$original_data,$item_delta) {
   // Now loop through the original values and check and unset if they are present
   // in the new list
   foreach ($original_stackla_ids as $original_id) {
-    if(in_array($original_id, $new_stackla_ids)) {
+    if (in_array($original_id, $new_stackla_ids)) {
       unset($delete_ids[$original_id]);
     }
   }
   //OK, the only remaining ids should be the ones to remove
-  foreach($delete_ids as $id_to_remove) {
+  foreach ($delete_ids as $id_to_remove) {
     stackla_delete_filter($id_to_remove);
-    drupal_set_message(t('Filter id @filterid removed',array(
+    drupal_set_message(t('Filter id @filterid removed', array(
       '@filterid' => $id_to_remove,
     )));
   }
-
 }
-
 
 /**
  * Clean a filter array of 'remove' element if present.
@@ -1500,17 +1481,34 @@ function stackla_field_tag_prepare($tag_name) {
   return $tag;
 }
 
+function stackla_field_generate_name($entity, $entity_type) {
+  if (isset($entity->title)) {
+    $name_prefix = $entity->title;
+  }
+  elseif (isset($entity->name)) {
+    $name_prefix = $entity->title;
+  }
+  else {
+    $name_prefix = entity_extract_ids($entity_type, $entity);
+  }
+  return $name_prefix;
+}
+
 /**
  * Implements hook_field_insert().
  */
 function stackla_field_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  $name_prefix = stackla_field_generate_name($entity, $entity_type);
   foreach ($items as $item_delta => $item) {
     $data = unserialize($item['widget_data']);
+
+    $data['name'] = $name_prefix;
+
     // If there is any data, create a new tag keyed by entity type and id.
     if (!empty($data['terms']) || !empty($data['filter_menu']) || !empty($data['look_and_feel'])) {
       // Create tag.
       $entity_ids = entity_extract_ids($entity_type, $entity);
-      $tag_name = preg_replace('@[^a-z0-9-]+@','-', strtolower($data['name'])) . '-' . $entity_type . '-' . $entity_ids[0];
+      $tag_name = preg_replace('@[^a-z0-9-]+@', '-', strtolower($data['name'])) . '-' . $entity_type . '-' . $entity_ids[0];
       $tag_to_create = stackla_field_tag_prepare($tag_name);
 
       $new_tag = stackla_create_tag($tag_to_create);
@@ -1532,7 +1530,11 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
     // Process new terms.
     if (!empty($data['terms'])) {
       foreach ($data['terms'] as $term_delta => $term) {
+        $e = 0;
         if (stackla_field_term_data_validate($term)) {
+          // Generate a name
+          $term_name = $name_prefix . '-' . $term['network'] . '-' . $term['type'] . '-' . $term['value'];
+          $term['name'] = $data['terms'][$term_delta]['name'] = $term_name;
           // Add the tagid for the entity
           $term['tag_id'] = $data['tag_id'];
           // submit the term to Stackla.
@@ -1565,7 +1567,7 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
           if ($new_filter = stackla_create_filter($stackla_filter)) {
             if ($new_filter->id) {
               $data['filter_menu'][$filter_delta]['stackla_id'] = $new_filter->id;
-               $data['filter_menu'][$filter_delta]['tag_id'] = $data['tag_id'];
+              $data['filter_menu'][$filter_delta]['tag_id'] = $data['tag_id'];
               drupal_set_message(t('New filter @filter created in Stackla', array(
                 '@filter' => $filter['title'],
               )));
@@ -1667,11 +1669,6 @@ function stackla_field_filter_validate($filter) {
  *    TRUE if OK
  */
 function stackla_field_term_data_validate($term) {
-
-  // Term must have a name.
-  if (empty($term['name'])) {
-    return FALSE;
-  }
 
   // Term must have a network
   if (empty($term['network'])) {
