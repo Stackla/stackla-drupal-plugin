@@ -1574,7 +1574,6 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
     // Process new terms.
     if (!empty($data['terms'])) {
       foreach ($data['terms'] as $term_delta => $term) {
-        $e = 0;
         if (stackla_field_term_data_validate($term)) {
           // Generate a name
           $term_name = $name_prefix . '-' . $term['network'] . '-' . $term['type'] . '-' . $term['value'];

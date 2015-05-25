@@ -29,8 +29,8 @@ function stackla_menu() {
   $items = array();
 
   $items['admin/config/services/stackla'] = array(
-    'title' => 'Stackla',
-    'description' => 'Configure Stackla integration',
+    'title' => t('Stackla for Drupal'),
+    'description' => t('Configure Stackla integration.'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('stackla_settings_form'),
     'access callback' => 'user_access',
