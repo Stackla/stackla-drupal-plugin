@@ -138,8 +138,13 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
 
       //CSS
       $css = drupal_get_path('module','stackla_field') . '/css/stackla_field_widget.css';
+      $js = drupal_get_path('module','stackla_field') . '/js/stackla_field_widget.js';
 
-      $widget['#attached']['css'] = array($css);
+      $widget['#attached'] = array(
+        'css' => array($css),
+        'js' => array($js),
+          );
+
 
       $widget['name'] = array(
         '#type' => 'hidden',
@@ -235,6 +240,9 @@ function stackla_field_look_elements($data, $form_state, $delta) {
       'method' => 'replace',
       'effect' => 'none',
     ),
+    '#attributes' => array(
+      'class' => array('look-options'),
+    ),
   );
 
   $elements['look_options']['new']['#description'] = t('Create a completely new Widget instance from scratch.');
@@ -266,7 +274,12 @@ function stackla_field_look_elements($data, $form_state, $delta) {
  * Generate 'look and feel' elements for widget  form.
  */
 function stackla_field_widget_details($look_and_feel) {
-  $elements = array();
+  $elements = array(
+    '#type' => 'fieldset',
+    '#attributes' => array(
+      'class' => array('look-details'),
+    ),
+  );
 
   switch ($look_and_feel['look_options']) {
     case 'new':
@@ -284,6 +297,9 @@ function stackla_field_widget_details($look_and_feel) {
         '#type' => 'select',
         '#options' => $derive_options,
         '#default_value' => (!empty($look_and_feel['details']['derive_parent'])) ? $look_and_feel['details']['derive_parent'] : 0,
+        '#attributes' => array(
+          'class' => array('widget-derive'),
+        ),
       );
 
       break;
@@ -322,6 +338,9 @@ function stackla_field_style_options() {
     '#title' => t('Style'),
     '#type' => 'select',
     '#options' => $style_options,
+    '#attributes' => array(
+          'class' => array('widget-style'),
+        ),
   );
 }
 
