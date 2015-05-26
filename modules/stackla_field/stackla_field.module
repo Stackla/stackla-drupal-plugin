@@ -101,6 +101,20 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
     if (!$authorised) {
       if (stackla_user_rights()) {
         $widget += stackla_field_authorise_widget();
+        $logo_path = drupal_get_path('module','stackla') . '/images/powered-by-stackla.png';
+         $widget['logo'] = array(
+        '#theme' => 'image',
+        '#path' => $logo_path,
+        '#attributes' => array(
+          'class' => array('logo'),
+        ),
+      );
+         //CSS
+      $css = drupal_get_path('module','stackla_field') . '/css/stackla_field_widget.css';
+
+      $widget['#attached'] = array(
+        'css' => array($css),
+          );
         if (!empty($form['#validate'])) {
           array_unshift($form['#validate'], 'stackla_field_authorise_validate');
         }
@@ -208,6 +222,17 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       );
 
       $widget['look_and_feel'] += $look_and_feel;
+
+      $logo_path = drupal_get_path('module','stackla') . '/images/powered-by-stackla.png';
+
+      $widget['logo'] = array(
+        '#theme' => 'image',
+        '#path' => $logo_path,
+        '#attributes' => array(
+          'class' => array('logo'),
+        ),
+      );
+
     }
   }
 
