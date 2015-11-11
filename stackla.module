@@ -80,6 +80,24 @@ function stackla_authenticate() {
   drupal_goto($access_uri);
 }
 
+function stackla_revoke_authentication() {
+  // Clear any other messages.
+  drupal_get_messages();
+  global $user;
+
+  stackla_unset_access_token();
+  drupal_set_message(t('Successfully revoke access token'), 'status');
+
+  if (!empty($user->data['stackla_return_path'])) {
+    $goto = $user->data['stackla_return_path'];
+    unset($user->data['stackla_return_path']);
+    user_save($user);
+  } else {
+    $goto = 'admin/config/services/stackla';
+  }
+  drupal_goto($goto);
+}
+
 function stackla_user_authenticate($return_path = NULL) {
   if ($return_path) {
     // Store the return path in the user
@@ -98,7 +116,6 @@ function stackla_outh_callback() {
   drupal_get_messages();
   global $user;
   global $base_url;
-  $output = array();
 
   $access_code = $_GET['code'];
   $client_id = variable_get('stackla_client_id');
@@ -209,6 +226,18 @@ function stackla_set_access_token($token) {
   $encrypted_token = encrypt($token);
   global $user;
   $user->data['stackla_access_token'] = $encrypted_token;
+  user_save($user);
+  return TRUE;
+}
+
+/**
+ * Unset Stackla access token.
+ *  @return boolean
+ *    TRUE if successful.
+ */
+function stackla_unset_access_token() {
+  global $user;
+  unset($user->data['stackla_access_token']);
   user_save($user);
   return TRUE;
 }

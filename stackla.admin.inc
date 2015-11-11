@@ -73,6 +73,13 @@ function stackla_settings_form($form, &$form_state) {
         '#markup' => '<p>' . t('Signed in successfully') . '</p>',
       );
 
+      $form['auth']['revoke_authentication'] = array(
+        '#type' => 'submit',
+        '#value' => t('Revoke current authentication'),
+        '#op' => 'authenticate',
+        '#submit' => array('stackla_admin_revoke_authentication'),
+      );
+
       $form['auth']['reauthenticate'] = array(
         '#type' => 'submit',
         '#value' => t('Sign in as a different user'),
@@ -80,6 +87,15 @@ function stackla_settings_form($form, &$form_state) {
         '#submit' => array('stackla_admin_authenticate'),
       );
     }
+  } else {
+      // Add authentication link.
+      $form['auth']['authenticate'] = array(
+        '#type' => 'submit',
+        '#disabled' => true,
+        '#value' => t('Sign in as a Stackla user'),
+        '#op' => 'authenticate',
+        '#submit' => array('stackla_authenticate'),
+      );
   }
 
   $form['debug'] = array(
@@ -98,4 +114,8 @@ function stackla_settings_form($form, &$form_state) {
 
 function stackla_admin_authenticate($form, &$form_state) {
   stackla_authenticate();
+}
+
+function stackla_admin_revoke_authentication($form, &$form_state) {
+  stackla_revoke_authentication();
 }
