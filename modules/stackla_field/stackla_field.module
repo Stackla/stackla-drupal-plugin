@@ -124,7 +124,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         drupal_set_message($permission_message, 'warning');
       }
     }
-    else {
+
       $widget += array(
         '#type' => 'fieldset',
         '#element_validate' => array('stackla_field_element_validate'),
@@ -208,7 +208,6 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       );
 
       $widget['look_and_feel'] += $look_and_feel;
-    }
   }
 
   $element['widget_data'] = $widget;
@@ -224,9 +223,11 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
 function stackla_field_look_elements($data, $form_state, $delta) {
   $elements = array();
 
+  $authorised = stackla_is_authenticated();
 
   $elements['look_options'] = array(
     '#type' => 'radios',
+    '#disabled' => !$authorised,
     '#options' => array(
       'new' => t('Create a new Stackla widget'),
       'derive' => t('Reuse an existing Stackla widget'),
@@ -263,7 +264,7 @@ function stackla_field_look_elements($data, $form_state, $delta) {
     );
   }
 
-  if (!empty($data['look_and_feel']['look_options'])) {
+  if (!empty($data['look_and_feel']['look_options']) && $authorised) {
     $elements['details'] = stackla_field_widget_details($data['look_and_feel']);
   }
 
@@ -313,9 +314,6 @@ function stackla_field_widget_details($look_and_feel) {
         '#options' => $clone_options,
         '#default_value' => (!empty($look_and_feel['details']['clone_parent'])) ? $look_and_feel['details']['clone_parent'] : 0,
       );
-
-      // $elements['clone_type_style'] = stackla_field_style_options();
-      // $elements['clone_type_style']['#default_value'] = (!empty($look_and_feel['details']['clone_type_style'])) ? $look_and_feel['details']['clone_type_style'] : 0;
 
       break;
   }
@@ -372,6 +370,8 @@ function stackla_field_widget_select_options() {
 function stackla_field_filters($values, $form_state, $delta) {
   $elements = array();
 
+  $authorised = stackla_is_authenticated();
+
   // Check if a 'remove' button has been clicked
   $remove_index = 'empty';
   if (!empty($form_state['clicked_button'])) {
@@ -410,19 +410,21 @@ function stackla_field_filters($values, $form_state, $delta) {
     }
   }
 
-  $elements[]['add_new'] = array(
-    '#type' => 'button',
-    '#value' => t('Add new filter'),
-    '#name' => 'filter_add_new',
-    //'#limit_validation_errors' => array(), //We don't want validation to run when we click this.
-    '#ajax' => array(
-      'callback' => 'stackla_field_ajax_widget_callback',
-      'wrapper' => 'st-filters-' . $delta,
-      'method' => 'replace',
-      'effect' => 'none',
-    ),
-  );
-
+  if ($authorised) {
+    $elements[]['add_new'] = array(
+      '#type' => 'button',
+      '#disabled' => !$authorised,
+      '#value' => t('Add new filter'),
+      '#name' => 'filter_add_new',
+      //'#limit_validation_errors' => array(), //We don't want validation to run when we click this.
+      '#ajax' => array(
+        'callback' => 'stackla_field_ajax_widget_callback',
+        'wrapper' => 'st-filters-' . $delta,
+        'method' => 'replace',
+        'effect' => 'none',
+      ),
+    );
+  }
 
   return $elements;
 }
@@ -469,12 +471,15 @@ function stackla_field_filter_elements_remove($key, $filter) {
 function stackla_field_filter_element($key, $filter, $delta) {
   $elements = array();
 
+  $authorised = stackla_is_authenticated();
+
   if (!empty($filter['remove_flag'])) {
     $elements = stackla_field_filter_elements_remove($key, $filter);
   }
   else {
     $elements[$key] = array(
       '#type' => 'fieldset',
+      '#disabled' => !$authorised,
       '#attributes' => array(
         'class' => array('filter-set'),
       ),
@@ -573,6 +578,7 @@ function stackla_field_filter_element($key, $filter, $delta) {
  * @param array $values
  */
 function stackla_field_term_elements($values, $form_state, $delta) {
+  $authorised = stackla_is_authenticated();
 
   $term_types = array(
     'user' => array(
@@ -665,6 +671,7 @@ function stackla_field_term_elements($values, $form_state, $delta) {
         if ($key !== $remove_index) {
           $elements[$key] = array(
             '#type' => 'fieldset',
+            '#disabled' => !$authorised,
             '#attributes' => array(
               'class' => array('stackla-term-fieldset'),
             ),
@@ -778,17 +785,19 @@ function stackla_field_term_elements($values, $form_state, $delta) {
             );
           }
 
-          $elements[$key]['remove'] = array(
-            '#type' => 'button',
-            '#value' => t('Remove this term'),
-            '#name' => 'social-remove-' . $key,
-            '#ajax' => array(
-              'callback' => 'stackla_field_ajax_widget_callback',
-              'wrapper' => 'st-terms-' . $delta,
-              'method' => 'replace',
-              'effect' => 'none',
-            ),
-          );
+          if ($authorised) {
+            $elements[$key]['remove'] = array(
+              '#type' => 'button',
+              '#value' => t('Remove this term'),
+              '#name' => 'social-remove-' . $key,
+              '#ajax' => array(
+                'callback' => 'stackla_field_ajax_widget_callback',
+                'wrapper' => 'st-terms-' . $delta,
+                'method' => 'replace',
+                'effect' => 'none',
+              ),
+            );
+          }
         }
         else {
           // We only need to flag for deletion if the term has already been
@@ -812,22 +821,24 @@ function stackla_field_term_elements($values, $form_state, $delta) {
     }
   }
 
-  $new_select = array(
-    'network' => array(
-      '#title' => t('Add a new term'),
-      '#type' => 'select',
-      '#options' => $initial_network_options,
-      '#default_value' => 0,
-      //'#name' => 'stackla_social_new',
-      '#ajax' => array(
-        'callback' => 'stackla_field_ajax_widget_callback',
-        'wrapper' => 'st-terms-' . $delta,
-        'method' => 'replace',
-        'effect' => 'none',
+  if ($authorised) {
+    $new_select = array(
+      'network' => array(
+        '#title' => t('Add a new term'),
+        '#type' => 'select',
+        '#options' => $initial_network_options,
+        '#default_value' => 0,
+        //'#name' => 'stackla_social_new',
+        '#ajax' => array(
+          'callback' => 'stackla_field_ajax_widget_callback',
+          'wrapper' => 'st-terms-' . $delta,
+          'method' => 'replace',
+          'effect' => 'none',
+        ),
       ),
-    ),
-  );
-  $elements[] = $new_select;
+    );
+    $elements[] = $new_select;
+  }
 
   return $elements;
 }

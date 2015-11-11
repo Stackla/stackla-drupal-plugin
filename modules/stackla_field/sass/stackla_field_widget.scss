@@ -1,50 +1,53 @@
 //SCSS.
 
 .field-widget-stackla-field-widget {
-    .fieldset-legend {
+
+  .fieldset-legend {
       text-transform: capitalize;
-    }
+  }
+
   .terms-fieldset {
     border: none;
-        .fieldset-wrapper {
-          //padding: 0;
-        }
+    .fieldset-wrapper {
+      //padding: 0;
+    }
   }
-    .stackla-term-fieldset {
-      padding: 1em 0 0 0;
-          input, .static, .form-item {
-            display: inline-block;
-            width: 30%;
-                  .header {
-                    font-weight: bold;
-                  }
-          }
+
+  .stackla-term-fieldset {
+    padding: 1em 0 0 0;
+
+    .static, .form-item {
+      display: inline-block;
+      width: 30%;
+      .header {
+        font-weight: bold;
+      }
+    }
+
     .prefix {
       display: inline-block;
     }
-    input[type=submit] {
-      display: block;
-      width: auto;
-      color: blue;
-      background: none;
-      border: none;
-      padding: 0;
-    }
-    }
+
+  }
+
   .filters-fieldset {
     border: none;
   }
+
   .filter-set {
-        .form-item {
-          display: inline-block;
-                &.form-type-checkboxes {
-                  margin-right: 5em;
-                }
+    .form-item {
+      display: inline-block;
+
+      &.form-type-checkboxes {
+        margin-right: 5em;
+      }
+
       &.form-type-textfield {
         margin-right: 4em;
       }
-        }
+    }
   }
+
   .look-details {
     padding: 0.2em;
   }
