@@ -117,33 +117,36 @@ function stackla_outh_callback() {
   global $user;
   global $base_url;
 
-  $access_code = $_GET['code'];
-  $client_id = variable_get('stackla_client_id');
-  $host = variable_get('stackla_stack_oauth_host');
-  $stack = variable_get('stackla_stack_name');
-  $client_secret = variable_get('stackla_client_secret');
-  $callback = $base_url . '/admin/config/services/stackla/accesscallback';
+  if (isset($_GET['code'])) {
+    $access_code = $_GET['code'];
+    $client_id = variable_get('stackla_client_id');
+    $host = variable_get('stackla_stack_oauth_host');
+    $stack = variable_get('stackla_stack_name');
+    $client_secret = variable_get('stackla_client_secret');
+    $callback = $base_url . '/admin/config/services/stackla/accesscallback';
 
-  if (variable_get('stackla_debug_mode') == 1) {
-    watchdog('stackla', 'Sending token request: host: @host, stack: @stack client id: @client_id, client secret: @client_secret, access code: @access_code, callback: @callback', array(
-      '@stack' => $stack,
-      '@host' => $host,
-      '@client_id' => $client_id,
-      '@client_secret' => $client_secret,
-      '@access_code' => $access_code,
-      '@callback' => $callback,
-    ));
-  }
+    if (variable_get('stackla_debug_mode') == 1) {
+      watchdog('stackla', 'Sending token request: host: @host, stack: @stack client id: @client_id, client secret: @client_secret, access code: @access_code, callback: @callback', array(
+        '@stack' => $stack,
+        '@host' => $host,
+        '@client_id' => $client_id,
+        '@client_secret' => $client_secret,
+        '@access_code' => $access_code,
+        '@callback' => $callback,
+      ));
+    }
 
-  $credentials = new Stackla\Core\Credentials($host, null, $stack);
-  $response = $credentials->generateToken($client_id, $client_secret, $access_code, $callback);
+    $credentials = new Stackla\Core\Credentials($host, null, $stack);
+    $response = $credentials->generateToken($client_id, $client_secret, $access_code, $callback);
 
-  if ($response === false) {
-    drupal_set_message(t('Failed creating access token.'), 'error');
-  }
-  else {
-    stackla_set_access_token($credentials->token);
-    drupal_set_message(t('Successfully created access token'), 'status');
+    if ($response === false) {
+      drupal_set_message(t('Failed creating access token.'), 'error');
+    } else {
+      stackla_set_access_token($credentials->token);
+      drupal_set_message(t('Successfully created access token'), 'status');
+    }
+  } else if (isset($_GET['error']) && isset($_GET['error_description'])) {
+      drupal_set_message(t($_GET['error_description']), 'error');
   }
   if (!empty($user->data['stackla_return_path'])) {
     $goto = $user->data['stackla_return_path'];
