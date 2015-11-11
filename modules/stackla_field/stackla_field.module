@@ -314,8 +314,8 @@ function stackla_field_widget_details($look_and_feel) {
         '#default_value' => (!empty($look_and_feel['details']['clone_parent'])) ? $look_and_feel['details']['clone_parent'] : 0,
       );
 
-      $elements['clone_type_style'] = stackla_field_style_options();
-      $elements['clone_type_style']['#default_value'] = (!empty($look_and_feel['details']['clone_type_style'])) ? $look_and_feel['details']['clone_type_style'] : 0;
+      // $elements['clone_type_style'] = stackla_field_style_options();
+      // $elements['clone_type_style']['#default_value'] = (!empty($look_and_feel['details']['clone_type_style'])) ? $look_and_feel['details']['clone_type_style'] : 0;
 
       break;
   }
@@ -500,7 +500,7 @@ function stackla_field_filter_element($key, $filter, $delta) {
         'gplus' => t('Google+'),
         'youtube' => t('YouTube'),
       ),
-      '#default_value' => (!empty($filter['networks'])) ? $filter['networks'] : array(),
+      '#default_value' => (!empty($filter['networks'])) ? $filter['networks'] : array('twitter', 'instagram', 'facebook', 'gplus', 'youtube'),
       '#attributes' => array(
         'class' => array('filter-networks'),
       ),
@@ -515,7 +515,7 @@ function stackla_field_filter_element($key, $filter, $delta) {
         'image' => t('Images'),
         'video' => t('Video'),
       ),
-      '#default_value' => (!empty($filter['show_media'])) ? $filter['show_media'] : array(),
+      '#default_value' => (!empty($filter['show_media'])) ? $filter['show_media'] : array('text', 'image', 'video'),
       '#attributes' => array(
         'class' => array('filter-show-media'),
       ),
@@ -531,7 +531,7 @@ function stackla_field_filter_element($key, $filter, $delta) {
         'votes_desc' => t('Votes'),
         'random' => t('Random'),
       ),
-      '#default_value' => (!empty($filter['sort'])) ? $filter['sort'] : '',
+      '#default_value' => (!empty($filter['sort'])) ? $filter['sort'] : 'source_created_at_desc',
       '#attributes' => array(
         'class' => array('filter-sort-by'),
       ),
@@ -1107,6 +1107,8 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
     $items = $entity->original->{$field_name}[$entity->language];
   }
   else {
+    $name_prefix = stackla_field_generate_name($entity, $entity_type);
+    $filterPrefix = preg_replace('@[^A-Za-z0-9-]+@', '-', $name_prefix);
     foreach ($items as $item_delta => $item) {
       $data = unserialize($item['widget_data']);
       $e = 0;
@@ -1214,6 +1216,7 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
             // the filter does not have a stackla id, so
             // we need to create a new filter in stackla.
             if (stackla_field_filter_validate($filter)) {
+              $filter['title'] = $filterPrefix . " - " . $filter['title'];
               $filter['tag_id'] = $data['tag_id'];
               $new_filter = stackla_field_create_filter($filter);
               if ($new_filter->id) {
@@ -1234,6 +1237,7 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
             $original_filter = $original_data[$item_delta]['filter_menu'][$filter_delta];
             stackla_field_filter_remove_remove($original_filter);
             if ($filter != $original_filter) {
+              $filter['title'] = $filterPrefix . " - " . $filter['title'];
               $stackla_filter = stackla_field_prepare_filter($filter);
               if ($updated_filter = stackla_update_filter($stackla_filter, $original_filter)) {
                 drupal_set_message(t('Filter @filter updated in Stackla', array(
@@ -1247,6 +1251,7 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
           // It might not if we are reverting a revision.
           elseif (!stackla_get_filter($filter['stackla_id'])) {
             if (stackla_field_filter_validate($filter)) {
+              $filter['title'] = $filterPrefix . " - " . $filter['title'];
               $filter['tag_id'] = $data['tag_id'];
               $new_filter = stackla_field_create_filter($filter);
               if ($new_filter->id) {
@@ -1568,6 +1573,7 @@ function stackla_field_generate_name($entity, $entity_type) {
  */
 function stackla_field_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
   $name_prefix = stackla_field_generate_name($entity, $entity_type);
+  $filterPrefix = preg_replace('@[^A-Za-z0-9-]+@', '-', $name_prefix);
   foreach ($items as $item_delta => $item) {
     $data = unserialize($item['widget_data']);
 
@@ -1630,6 +1636,7 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
     if (!empty($data['filter_menu'])) {
       foreach ($data['filter_menu'] as $filter_delta => $filter) {
         if (stackla_field_filter_validate($filter)) {
+          $filter['title'] = $filterPrefix . " - " . $filter['title'];
           $filter['tag_id'] = $data['tag_id'];
           $stackla_filter = stackla_field_prepare_filter($filter);
           if ($new_filter = stackla_create_filter($stackla_filter)) {

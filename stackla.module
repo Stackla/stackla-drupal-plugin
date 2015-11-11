@@ -5,24 +5,6 @@
  */
 
 /**
- * Implements hook_libraries_info().
- */
-function stackla_libraries_info() {
-
-  $libraries['stackla'] = array(
-    'name' => 'Stackla',
-    'vendor url' => 'http://stackla.com/',
-    'download url' => 'http://stackla.com/api',
-    'version' => 1,
-    'files' => array(
-      'php' => array('vendor/autoload.php'), //this can be a path to the file location like array('lib/simple.js')
-    ),
-  );
-
-  return $libraries;
-}
-
-/**
  * Implements hook_menu().
  */
 function stackla_menu() {
@@ -84,7 +66,6 @@ function stackla_check_requirements() {
 
 function stackla_authenticate() {
   global $base_url;
-  libraries_load('stackla');
   if (!stackla_check_requirements()) {
     return FALSE;
   }
@@ -117,7 +98,6 @@ function stackla_outh_callback() {
   drupal_get_messages();
   global $user;
   global $base_url;
-  libraries_load('stackla');
   $output = array();
 
   $access_code = $_GET['code'];
@@ -340,7 +320,7 @@ function stackla_update_term($term, $original_term) {
 /**
  *
  * Delete a term.
- * 
+ *
  * @param type $term_id
  * @return type
  */
@@ -710,7 +690,7 @@ function stackla_clone_widget($widget) {
 
   // update the new widget with the selected type_style.
 
-  $new_widget->type_style = $widget['type_style'];
+  // $new_widget->type_style = $widget['type_style'];
 
   $new_widget->filter_id = $widget['filter_id'];
 
@@ -774,7 +754,6 @@ function stackla_create_stack() {
 
   if (!isset($stack)) {
     // Load the SDK.
-    libraries_load('stackla');
     $stackla_variables = stackla_get_variables();
 
     if (variable_get('stackla_debug_mode') == 1) {
