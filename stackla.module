@@ -408,7 +408,6 @@ function stackla_delete_tag($tag_id) {
  */
 function stackla_create_filter($filter) {
   if (variable_get('stackla_debug_mode') == 1) {
-
     watchdog('stackla', 'Attempting to create filter. Values: <pre>@values</pre>', array(
       '@values' => print_r($filter, TRUE),
         ), WATCHDOG_NOTICE);
@@ -923,8 +922,7 @@ function stackla_field_form_element($variables) {
   if (isset($element['#name'])) {
     switch ($element['#name']) {
       case 'stackla_oauth_callback':
-        $variables['element']['#description_top'] = $variables['element']['#description'];
-        unset($variables['element']['#description']);
+        $variables['element']['#description'];
         break;
     }
   }

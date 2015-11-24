@@ -13,39 +13,40 @@ function stackla_settings_form($form, &$form_state) {
 
   $form['for-stackla'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Information for Stackla'),
+    '#title' => t('Step 1: Configure Stackla'),
+    '#description' => t("<p>Before you can configure WordPress, you need to first configure Stackla.</p><p>Copy the 'Callback URL' below and paste it in the relevant field in the WordPress plugin configuration screen in Stackla.</p>"),
   );
 
   $form['for-stackla']['stackla_oauth_callback'] = array(
-    '#title' => t('Oauth Callback URL for Stackla'),
+    '#title' => t('Callback URL'),
     '#type' => 'textfield',
     '#value' => $base_url . '/admin/config/services/stackla/accesscallback',
     '#disabled' => TRUE,
-    '#description' => t('Configure the following in the Drupal Plugin instance in your Stack.'),
+    '#description' => t("Please copy + paste this URL into the 'Callback URL' field in the WordPress plugin configuration screen in Stackla.")
   );
 
   $form['from-stackla'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Information from Stackla'),
-    '#description' => t('Please find the information for the following fields in the Drupal Plugin instance in your Stack.'),
+    '#title' => t('Step 2: Configure Drupal'),
   );
 
   $form['from-stackla']['stackla_stack_name'] = array(
-    '#title' => t('Stack Short Name'),
+    '#title' => t('Stack Shortname'),
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => variable_get('stackla_stack_name'),
+    '#description' => t('You can retrieve your Stack shortname from the WordPress configuration settings page.'),
   );
 
   $form['from-stackla']['stackla_client_id'] = array(
-    '#title' => t('Stackla Client ID'),
+    '#title' => t('Client ID'),
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => variable_get('stackla_client_id'),
   );
 
   $form['from-stackla']['stackla_client_secret'] = array(
-    '#title' => t('Stackla Client Secret'),
+    '#title' => t('Client Secret'),
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => variable_get('stackla_client_secret'),
@@ -53,7 +54,8 @@ function stackla_settings_form($form, &$form_state) {
 
   $form['auth'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Authentication'),
+    '#title' => t('Setp 3: Authorize'),
+    '#description' => t("You need to authorize WordPress to access your Stackla account. Click 'Authorize' below, you'll be prompted to log in to Stackla to provide authorization.")
   );
 
   if (stackla_check_requirements()) {
@@ -61,28 +63,28 @@ function stackla_settings_form($form, &$form_state) {
       // Add authentication link.
       $form['auth']['authenticate'] = array(
         '#type' => 'submit',
-        '#value' => t('Sign in as a Stackla user'),
+        '#value' => t('Authorize'),
         '#op' => 'authenticate',
         '#submit' => array('stackla_authenticate'),
       );
     }
     else {
       // Add message 'Access token set'!
-      $form['auth']['authenticate'] = array(
-        '#type' => 'markup',
-        '#markup' => '<p>' . t('Signed in successfully') . '</p>',
-      );
+      // $form['auth']['authenticate'] = array(
+      //   '#type' => 'markup',
+      //   '#markup' => '<p>' . t('Signed in successfully') . '</p>',
+      // );
 
       $form['auth']['revoke_authentication'] = array(
         '#type' => 'submit',
-        '#value' => t('Revoke current authentication'),
+        '#value' => t('Revoke authorization'),
         '#op' => 'authenticate',
         '#submit' => array('stackla_admin_revoke_authentication'),
       );
 
       $form['auth']['reauthenticate'] = array(
         '#type' => 'submit',
-        '#value' => t('Sign in as a different user'),
+        '#value' => t('Reautorize'),
         '#op' => 'authenticate',
         '#submit' => array('stackla_admin_authenticate'),
       );
