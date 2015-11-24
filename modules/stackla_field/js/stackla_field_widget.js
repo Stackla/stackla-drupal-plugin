@@ -17,10 +17,9 @@
 
       $('.look-options input[type=radio]')
         .change(function(e){
+          $(this).parent().parent().find('.on').removeClass('on');
           if ($(this).is(':checked')) {
             $(this).parent().addClass('on');
-          } else {
-            $(this).parent().removeClass('on');
           }
         })
       $('.look-details input[value=base_waterfall]').parent().addClass('st-widgetStyle st-widgetStyle-base_waterfall');
