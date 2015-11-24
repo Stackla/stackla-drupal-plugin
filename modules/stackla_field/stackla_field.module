@@ -136,10 +136,11 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
 
       //CSS
       $css = drupal_get_path('module','stackla_field') . '/css/stackla_field_widget.css';
+      $css2 = drupal_get_path('module','stackla') . '/css/stackla_powered.css';
       $js = drupal_get_path('module','stackla_field') . '/js/stackla_field_widget.js';
 
       $widget['#attached'] = array(
-        'css' => array($css),
+        'css' => array($css, $css2),
         'js' => array($js),
           );
 
@@ -221,6 +222,12 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
 
       $widget['look_and_feel'] += $look_and_feel;
     }
+    $widget['powered_by_stackla'] = array(
+      '#type' => 'markup',
+      '#markup' => t('Powered by Stackla'),
+      '#prefix' => '<div class="powered-by-stackla">',
+      '#suffix' => '</div>',
+    );
   }
 
   $element['widget_data'] = $widget;

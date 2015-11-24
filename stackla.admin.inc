@@ -69,12 +69,6 @@ function stackla_settings_form($form, &$form_state) {
       );
     }
     else {
-      // Add message 'Access token set'!
-      // $form['auth']['authenticate'] = array(
-      //   '#type' => 'markup',
-      //   '#markup' => '<p>' . t('Signed in successfully') . '</p>',
-      // );
-
       $form['auth']['revoke_authentication'] = array(
         '#type' => 'submit',
         '#value' => t('Revoke authorization'),
@@ -111,6 +105,21 @@ function stackla_settings_form($form, &$form_state) {
     '#description' => t('Will display and log verbose debug information. This should be disabled in production.'),
     '#default_value' => variable_get('stackla_debug_mode'),
   );
+
+  $form['powered_by_stackla'] = array(
+    '#type' => 'markup',
+    '#markup' => t('Powered by Stackla'),
+    '#prefix' => '<div class="powered-by-stackla">',
+    '#suffix' => '</div>',
+  );
+
+  //CSS
+  $css = drupal_get_path('module','stackla') . '/css/stackla_powered.css';
+
+  $form['#attached'] = array(
+    'css' => array($css),
+  );
+
   return(system_settings_form($form));
 }
 
