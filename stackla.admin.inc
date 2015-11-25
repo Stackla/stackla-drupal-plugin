@@ -14,7 +14,7 @@ function stackla_settings_form($form, &$form_state) {
   $form['for-stackla'] = array(
     '#type' => 'fieldset',
     '#title' => t('Step 1: Configure Stackla'),
-    '#description' => t("<p>Before you can configure WordPress, you need to first configure Stackla.</p><p>Copy the 'Callback URL' below and paste it in the relevant field in the WordPress plugin configuration screen in Stackla.</p>"),
+    '#description' => t("<p>Before you can configure Drupal, you need to first configure Stackla.</p><p>Copy the 'Callback URL' below and paste it in the relevant field in the Drupal plugin configuration screen in Stackla.</p>"),
   );
 
   $form['for-stackla']['stackla_oauth_callback'] = array(
@@ -22,7 +22,7 @@ function stackla_settings_form($form, &$form_state) {
     '#type' => 'textfield',
     '#value' => $base_url . '/admin/config/services/stackla/accesscallback',
     '#disabled' => TRUE,
-    '#description' => t("Please copy + paste this URL into the 'Callback URL' field in the WordPress plugin configuration screen in Stackla.")
+    '#description' => t("Please copy + paste this URL into the 'Callback URL' field in the Drupal plugin configuration screen in Stackla.")
   );
 
   $form['from-stackla'] = array(
@@ -35,7 +35,7 @@ function stackla_settings_form($form, &$form_state) {
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => variable_get('stackla_stack_name'),
-    '#description' => t('You can retrieve your Stack shortname from the WordPress configuration settings page.'),
+    '#description' => t('You can retrieve your Stack shortname from the Drupal configuration settings page.'),
   );
 
   $form['from-stackla']['stackla_client_id'] = array(
@@ -55,7 +55,7 @@ function stackla_settings_form($form, &$form_state) {
   $form['auth'] = array(
     '#type' => 'fieldset',
     '#title' => t('Setp 3: Authorize'),
-    '#description' => t("You need to authorize WordPress to access your Stackla account. Click 'Authorize' below, you'll be prompted to log in to Stackla to provide authorization.")
+    '#description' => t("You need to authorize Drupal to access your Stackla account. Click 'Authorize' below, you'll be prompted to log in to Stackla to provide authorization.")
   );
 
   if (stackla_check_requirements()) {
