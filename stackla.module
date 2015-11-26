@@ -86,7 +86,7 @@ function stackla_revoke_authentication() {
   global $user;
 
   stackla_unset_access_token();
-  drupal_set_message(t('Successfully revoke access token'), 'status');
+  drupal_set_message(t('Successfully revoked Stackla authentication'), 'status');
 
   if (!empty($user->data['stackla_return_path'])) {
     $goto = $user->data['stackla_return_path'];
@@ -140,10 +140,10 @@ function stackla_outh_callback() {
     $response = $credentials->generateToken($client_id, $client_secret, $access_code, $callback);
 
     if ($response === false) {
-      drupal_set_message(t('Failed creating access token.'), 'error');
+      drupal_set_message(t('Failed to authorize with Stackla.'), 'error');
     } else {
       stackla_set_access_token($credentials->token);
-      drupal_set_message(t('Successfully created access token'), 'status');
+      drupal_set_message(t('Successfully authorized with Stackla'), 'status');
     }
   } else if (isset($_GET['error']) && isset($_GET['error_description'])) {
       drupal_set_message(t($_GET['error_description']), 'error');

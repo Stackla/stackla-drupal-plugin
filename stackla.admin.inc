@@ -54,7 +54,7 @@ function stackla_settings_form($form, &$form_state) {
 
   $form['auth'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Setp 3: Authorize'),
+    '#title' => t('Step 3: Authorize'),
     '#description' => t("You need to authorize Drupal to access your Stackla account. Click 'Authorize' below, you'll be prompted to log in to Stackla to provide authorization.")
   );
 
@@ -78,7 +78,7 @@ function stackla_settings_form($form, &$form_state) {
 
       $form['auth']['reauthenticate'] = array(
         '#type' => 'submit',
-        '#value' => t('Reautorize'),
+        '#value' => t('Reauthorize'),
         '#op' => 'authenticate',
         '#submit' => array('stackla_admin_authenticate'),
       );
