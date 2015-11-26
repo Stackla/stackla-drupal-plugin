@@ -1208,10 +1208,10 @@ function stackla_field_delete_filters($filters) {
 /**
  * Delete widget from Stackla
  *
- * @param array $widgets
+ * @param array $widget
  *  Sumbitted widget info.
  */
-function stackla_field_delete_widget($widgets) {
+function stackla_field_delete_widget($widget) {
   if (!empty($widget['stackla_id'])) {
     stackla_delete_widget($widget['stackla_id']);
   }

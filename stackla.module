@@ -266,6 +266,7 @@ function stackla_create_term($term) {
         ), WATCHDOG_NOTICE);
   }
 
+  $tag = stackla_load_tag($term['tag_id']);
   $stack = stackla_create_stack();
 
   $new_term = $stack->instance('term');
@@ -279,6 +280,7 @@ function stackla_create_term($term) {
   $new_term->type = $term['type'];
   $new_term->filter = '';
   $new_term->network = $term['network'];
+  $new_term->addTag($tag);
 
   // Create the term
   try {
@@ -290,17 +292,6 @@ function stackla_create_term($term) {
         ), WATCHDOG_ERROR);
   }
 
-  if (!empty($term['tag_id'])) {
-    $tag = stackla_load_tag($term['tag_id']);
-    try {
-      $new_term->addTag($tag);
-    } catch (Exception $ex) {
-      $error = $new_term->getErrors();
-      watchdog('stackla', 'Error adding tag to term. Error: <pre>@values</pre>', array(
-        '@values' => print_r($error, TRUE),
-          ), WATCHDOG_ERROR);
-    }
-  }
   return $new_term;
 }
 
@@ -659,7 +650,7 @@ function stackla_update_widget($widget) {
   try {
     $updated_widget->update();
   } catch (Exception $ex) {
-    $error = $new_widget->getErrors();
+    $error = $updated_widget->getErrors();
     watchdog('stackla', 'Error updating widget. Error: <pre>@error</pre>', array(
       '@values' => print_r($error, TRUE),
         ), WATCHDOG_ERROR);
@@ -712,7 +703,6 @@ function stackla_load_widget($widget_id) {
  *  New widget object.
  */
 function stackla_clone_widget($widget) {
-  $stackla = stackla_create_stack();
   $clone_parent_id = $widget['clone_parent'];
 
   $clone_parent = stackla_load_widget($clone_parent_id);
@@ -739,8 +729,6 @@ function stackla_clone_widget($widget) {
  *    The cloned widget.
  */
 function stackla_derive_widget($widget) {
-  $stackla = stackla_create_stack();
-
   $derive_parent_id = $widget['derive_parent'];
 
   $derive_parent = stackla_load_widget($derive_parent_id);
@@ -759,14 +747,14 @@ function stackla_derive_widget($widget) {
  *  The deleted widget.
  */
 function stackla_delete_widget($widget_id) {
-  $stackla = stackla_create_stack();
+  $stack = stackla_create_stack();
 
   $widget = $stack->instance('widget', $widget_id, FALSE);
 
   try {
     $widget->delete();
   } catch (Exception $ex) {
-    $error = $new_widget->getErrors();
+    $error = $widget->getErrors();
     watchdog('stackla', 'Error deleting widget. Error: <pre>@error</pre>', array(
       '@values' => print_r($error, TRUE),
         ), WATCHDOG_ERROR);
