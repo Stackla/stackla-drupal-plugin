@@ -882,17 +882,6 @@ function stackla_field_term_elements($values, $form_state, $delta, $isRequired =
                 'effect' => 'none',
               ),
             );
-          $elements[$key]['remove'] = array(
-            '#type' => 'button',
-            '#value' => t('Remove term'),
-            '#name' => 'filter-remove-' . $key,
-            '#ajax' => array(
-              'callback' => 'stackla_field_ajax_widget_callback',
-              'wrapper' => 'st-filters-' . $delta,
-              'method' => 'replace',
-              'effect' => 'none',
-            ),
-          );
           }
         }
         else {
