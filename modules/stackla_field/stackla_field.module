@@ -174,8 +174,10 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       $showDeleteOption = false;
       if (!empty($form_state['values'][$field_name]['und'][$delta]['widget_data'])) {
         $field_data = unserialize($form_state['values'][$field_name]['und'][$delta]['widget_data']);
-        if (isset($field_data['look_and_feel']) && isset($field_data['look_and_feel']['look_options']) && ($field_data['look_and_feel']['look_options'] !== $value['look_and_feel']['look_options'] || $field_data['look_and_feel']['details'] != $value['look_and_feel']['details'])) {
-          $showDeleteOption = true;
+        if (isset($field_data['look_and_feel']) && isset($value['look_and_feel']) && isset($field_data['look_and_feel']['look_options']) && isset($value['look_and_feel']['look_options']) && isset($field_data['look_and_feel']['details']) && isset($value['look_and_feel']['details'])) {
+          if (($field_data['look_and_feel']['look_options'] !== $value['look_and_feel']['look_options'] || $field_data['look_and_feel']['details'] != $value['look_and_feel']['details'])) {
+            $showDeleteOption = true;
+          }
         }
       }
       $social_elements = stackla_field_term_elements($field_data, $form_state, $delta, $isRequired);
