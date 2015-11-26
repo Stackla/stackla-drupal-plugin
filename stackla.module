@@ -562,6 +562,9 @@ function stackla_create_tag($tag) {
   // Populate filter properties
   $new_tag->tag = $tag['tag'];
   $new_tag->type = $tag['type'];
+  if (!empty($tag['slug'])) {
+    $new_tag->slug = $tag['slug'];
+  }
   $new_tag->publicly_visible = $tag['publicly_visible'];
 
   try {

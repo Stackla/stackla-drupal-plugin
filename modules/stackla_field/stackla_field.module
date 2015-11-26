@@ -1211,6 +1211,7 @@ function stackla_field_delete_widget($widget) {
  */
 function stackla_field_field_update($entity_type, $entity, $field, $instance, $langcode, &$items) {
 
+  $name_prefix = stackla_field_generate_name($entity, $entity_type);
   $field_name = $field['field_name'];
   $original_data = array();
   foreach ($entity->original->{$field_name}[$entity->language] as $entity_widget_delta => $entity_widget) {
@@ -1223,7 +1224,6 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
     $items = $entity->original->{$field_name}[$entity->language];
   }
   else {
-    $name_prefix = stackla_field_generate_name($entity, $entity_type);
     $filterPrefix = preg_replace('@[^A-Za-z0-9-]+@', '-', $name_prefix);
     foreach ($items as $item_delta => $item) {
       $data = unserialize($item['widget_data']);
@@ -1256,7 +1256,6 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
           // if the term is complete but does not have a stackla_id, create a new
           // term in stackla.
           elseif (empty($term['stackla_id']) && stackla_field_term_data_validate($term)) {
-            $name_prefix = stackla_field_generate_name($entity, $entity_type);
             $term['name'] = $name_prefix . '-' . $term['network'] . '-' . $term['type'] . '-' . $term['value'];
             $term['tag_id'] = $data['tag_id'];
             $new_term = stackla_create_term($term);
@@ -1279,7 +1278,6 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
             if ($term != $original_term) {
               if (!empty($original_term['stackla_id'])) {
                 // Re-generate term name
-                $name_prefix = stackla_field_generate_name($entity, $entity_type);
                 $term['name'] = $name_prefix . '-' . $term['network'] . '-' . $term['type'] . '-' . $term['value'];
                 if ($updated_term = stackla_update_term($term, $original_term)) {
                   drupal_set_message(t('Term @term updated in Stackla', array(
@@ -1663,17 +1661,20 @@ function stackla_field_create_filter($filter) {
   return $new_filter;
 }
 
-function stackla_field_tag_prepare($tag_name) {
+function stackla_field_tag_prepare($tag_name, $slug_name) {
   $tag = array();
   $tag['tag'] = $tag_name;
+  $tag['slug'] = $slug_name;
   $tag['type'] = 'content';
-  $tag['publicly_visible'] = 1;
-
+  $tag['publicly_visible'] = 0;
 
   return $tag;
 }
 
 function stackla_field_generate_name($entity, $entity_type) {
+  $entity_ids = entity_extract_ids($entity_type, $entity);
+  return $name_prefix = 'DPL-' . $entity_ids[0];
+
   if (isset($entity->title)) {
     $name_prefix = $entity->title;
   }
@@ -1701,8 +1702,9 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
     if (!empty($data['terms']) || !empty($data['filter_menu']) || !empty($data['look_and_feel'])) {
       // Create tag.
       $entity_ids = entity_extract_ids($entity_type, $entity);
-      $tag_name = preg_replace('@[^a-z0-9-]+@', '-', strtolower($data['name'])) . '-' . $entity_type . '-' . $entity_ids[0];
-      $tag_to_create = stackla_field_tag_prepare($tag_name);
+      $tag_slug_name = $name_prefix .'-'. preg_replace('@[^a-z0-9-]+@', '-', strtolower($data['name'])) . '-' . $entity_type . '-' . $entity_ids[0];
+      $tag_name = $name_prefix;
+      $tag_to_create = stackla_field_tag_prepare($tag_name, $tag_slug_name);
 
       $new_tag = stackla_create_tag($tag_to_create);
 
