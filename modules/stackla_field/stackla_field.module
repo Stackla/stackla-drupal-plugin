@@ -1308,6 +1308,8 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
         }
       }
 
+      file_put_contents('/tmp/debug.log', print_r("Current value:\n", true), FILE_APPEND);
+      file_put_contents('/tmp/debug.log', print_r($data, true), FILE_APPEND);
       if (!empty($data['default_filter'])) {
         $original_filter= $original_data[$item_delta]['default_filter'];
         if ($original_filter != $data['default_filter']) {
@@ -1929,4 +1931,57 @@ function stackla_field_term_data_validate($term) {
   }
 
   return TRUE;
+}
+
+/**
+ *
+ * @see hook_form_alter
+ */
+function stackla_field_form_alter(&$form, &$form_state, $form_id) {
+    if (preg_match("/_node_form$/", $form_id)) {
+        $fields = field_info_instances('node',str_replace('_node_form', '', $form_id));
+        $hasStacklaField = false;
+        foreach ($fields as $field) {
+            if (isset($field['widget']) && isset($field['widget']['type']) && $field['widget']['type'] == 'stackla_field_widget') {
+                $hasStacklaField = true;
+                break;
+            }
+        }
+        if ($hasStacklaField && !isset($form_state['storage']['confirm'])) {
+            // $form['#submit'][] = 'stackla_field_node_form_confirm';
+            foreach ($form['actions']['submit']['#submit'] as $key => $callback) {
+                if ($callback == 'node_form_submit') {
+                    unset($form['actions']['submit']['#submit'][$key]);
+                }
+            }
+
+            $form['actions']['submit']['#submit'][] = 'stackla_field_node_form_confirm';
+
+        } elseif ($hasStacklaField) {
+            $form = confirm_form($form, 'Are you wish to continue?', substr($form['#action'], 1), 'You are about to modify Stackla Widget. This changes will effect live widget. Proceed with caution', 'Proceed', 'Cancel');
+            // The following is a must. without it, confirm form will not create node.
+            $form['actions']['submit']['#submit'][] = 'node_form_submit';
+
+            foreach ($form as $key => $value) {
+                if (!preg_match("/^\#/", $key) && gettype($form[$key]) == 'array' && isset($form[$key]['#access'])) {
+                    $form[$key]['#access'] = FALSE;
+                }
+            }
+            // foreach ($form_state['field'] as $key => $value) {
+            //     $form[$key]['#access'] = FALSE;
+            // }
+        }
+    }
+}
+
+function stackla_field_node_form_confirm(&$form, &$form_state) {
+  if(!isset($form_state['storage']['confirm']))
+  {
+    $form_state['storage']['confirm'] = TRUE; // this will cause the form to be rebuilt, entering the confirm part of the form
+    $form_state['rebuild'] = TRUE; // along with this
+  }
+  else
+  {
+    // will never come here
+  }
 }
