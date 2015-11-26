@@ -174,7 +174,7 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
       $showDeleteOption = false;
       if (!empty($form_state['values'][$field_name]['und'][$delta]['widget_data'])) {
         $field_data = unserialize($form_state['values'][$field_name]['und'][$delta]['widget_data']);
-        if ($field_data['look_and_feel']['look_options'] !== $value['look_and_feel']['look_options'] || $field_data['look_and_feel']['details'] != $value['look_and_feel']['details']) {
+        if (isset($field_data['look_and_feel']) && isset($field_data['look_and_feel']['look_options']) && ($field_data['look_and_feel']['look_options'] !== $value['look_and_feel']['look_options'] || $field_data['look_and_feel']['details'] != $value['look_and_feel']['details'])) {
           $showDeleteOption = true;
         }
       }
@@ -1311,7 +1311,7 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
       if (!empty($data['default_filter'])) {
         $original_filter= $original_data[$item_delta]['default_filter'];
         if ($original_filter != $data['default_filter']) {
-          $data['default_filter'] = stackla_field_save_defaultFilter($data['default_filter'], $filterPrefix, $data['tag_id']);
+          $data['default_filter'] = stackla_field_save_defaultFilter($data['default_filter'], $original_filter, $filterPrefix, $data['tag_id']);
         }
       }
 
@@ -1792,7 +1792,7 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
     }
 
     if (!empty($data['default_filter'])) {
-      $data['default_filter'] = stackla_field_save_defaultFilter($data['default_filter'], $filterPrefix, $data['tag_id']);
+      $data['default_filter'] = stackla_field_save_defaultFilter($data['default_filter'], array(), $filterPrefix, $data['tag_id']);
     }
 
     //Widget!
@@ -1823,7 +1823,7 @@ function stackla_field_field_insert($entity_type, $entity, $field, $instance, $l
 /**
  * stackla_field_save_defaultFilter will prepare, create or update default filter
  */
-function stackla_field_save_defaultFilter($defaultFilter, $filterPrefix, $tagId)
+function stackla_field_save_defaultFilter($defaultFilter, $original_filter, $filterPrefix, $tagId)
 {
   // create default filter
   $filter = array(
@@ -1848,11 +1848,8 @@ function stackla_field_save_defaultFilter($defaultFilter, $filterPrefix, $tagId)
         }
       }
   } else {
-      if ($updated_filter = stackla_update_filter($stackla_filter, $original_filter)) {
-        drupal_set_message(t('Filter @filter updated in Stackla', array(
-          '@filter' => $filter['title'],
-        )));
-        $data['filter_menu'][$filter_delta]['tag_id'] = $data['tag_id'];
+      if (stackla_update_filter($stackla_filter, $original_filter)) {
+          drupal_set_message(t('Default filter updated in Stackla'));
       }
   }
 
