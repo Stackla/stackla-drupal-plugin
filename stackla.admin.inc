@@ -28,6 +28,7 @@ function stackla_settings_form($form, &$form_state) {
   $form['from-stackla'] = array(
     '#type' => 'fieldset',
     '#title' => t('Step 2: Configure Drupal'),
+    '#description' => t('You can retrieve these details from the Drupal plugin configuration screen.'),
   );
 
   $form['from-stackla']['stackla_stack_name'] = array(
@@ -35,7 +36,6 @@ function stackla_settings_form($form, &$form_state) {
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => variable_get('stackla_stack_name'),
-    '#description' => t('You can retrieve your Stack shortname from the Drupal configuration settings page.'),
   );
 
   $form['from-stackla']['stackla_client_id'] = array(
