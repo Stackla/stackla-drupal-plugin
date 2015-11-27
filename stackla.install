@@ -11,25 +11,6 @@ function stackla_requirements($phase) {
   $requirements = array();
   $t = get_t();
 
-  if($phase == 'runtime') {
-    $requirements['stackla_library'] = array(
-        'title' => $t('Stackla SDK library'),
-        'description' => $t('The Stackla SDK library is required.'),
-    );
-    $library = libraries_detect('stackla');
-    if($library && !empty($library['installed'])) {
-      $requirements['stackla_library'] += array(
-        'value' => $t('Installed'),
-        'severity' => REQUIREMENT_OK,
-      );
-    }
-    else {
-      $requirements['stackla_library'] += array(
-        'value' => $t('Not installed'),
-        'severity' => REQUIREMENT_ERROR,
-      );
-    }
-  }
   return $requirements;
 }
 
