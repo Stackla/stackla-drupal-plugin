@@ -710,15 +710,19 @@ function stackla_clone_widget($widget) {
 
   $clone_parent = stackla_load_widget($clone_parent_id);
 
-  $new_widget = $clone_parent->duplicate();
+  $new_widget = null;
+  try {
+    $new_widget = $clone_parent->duplicate();
+    // update the new widget with the selected type_style.
 
-  // update the new widget with the selected type_style.
+    // $new_widget->type_style = $widget['type_style'];
 
-  // $new_widget->type_style = $widget['type_style'];
+    $new_widget->filter_id = $widget['filter_id'];
 
-  $new_widget->filter_id = $widget['filter_id'];
-
-  $new_widget->update();
+    $new_widget->update();
+  } catch (Exception $e) {
+    drupal_set_message(t("Unable to clone the widget. Please make sure it's a valid widget."), 'error');
+  }
 
   return $new_widget;
 }
@@ -736,7 +740,11 @@ function stackla_derive_widget($widget) {
 
   $derive_parent = stackla_load_widget($derive_parent_id);
 
-  $new_widget = $derive_parent->derive($widget['filter_id'], $widget['name']);
+  try {
+    $new_widget = $derive_parent->derive($widget['filter_id'], $widget['name']);
+  } catch (Exception $e) {
+    drupal_set_message(t("Unable to derive the widget. Please make sure it's a valid widget."), 'error');
+  }
 
   return $new_widget;
 }
