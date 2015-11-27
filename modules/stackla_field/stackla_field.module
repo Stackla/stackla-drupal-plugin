@@ -1300,9 +1300,7 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
 
       if (!empty($data['default_filter'])) {
         $original_filter= $original_data[$item_delta]['default_filter'];
-        if ($original_filter != $data['default_filter']) {
-          $data['default_filter'] = stackla_field_save_defaultFilter($data['default_filter'], $original_filter, $filterPrefix, $data['tag_id']);
-        }
+        $data['default_filter'] = stackla_field_save_defaultFilter($data['default_filter'], $original_filter, $filterPrefix, $data['tag_id']);
       }
 
       // // In case we are reverting from a revision, we need to check if there
@@ -1831,20 +1829,20 @@ function stackla_field_save_defaultFilter($defaultFilter, $original_filter, $fil
 
   $stackla_filter = stackla_field_prepare_filter($filter);
   if (empty($filter['stackla_id'])) {
-      if ($new_filter = stackla_create_filter($stackla_filter)) {
-        if ($new_filter->id) {
-          $defaultFilter['stackla_id'] = $new_filter->id;
-          $defaultFilter['tag_id'] = $tagId;
-          drupal_set_message(t('Default filter created in Stackla'));
-        } else {
-          // Log error, set message.
-          drupal_set_message(t('Unable to create Default filter'), 'error');
-        }
+    if ($new_filter = stackla_create_filter($stackla_filter)) {
+      if ($new_filter->id) {
+        $defaultFilter['stackla_id'] = $new_filter->id;
+        $defaultFilter['tag_id'] = $tagId;
+        drupal_set_message(t('Default filter created in Stackla'));
+      } else {
+        // Log error, set message.
+        drupal_set_message(t('Unable to create Default filter'), 'error');
       }
+    }
   } else {
-      if (stackla_update_filter($stackla_filter, $original_filter)) {
-          drupal_set_message(t('Default filter updated in Stackla'));
-      }
+    if (stackla_update_filter($stackla_filter, $original_filter)) {
+      drupal_set_message(t('Default filter updated in Stackla'));
+    }
   }
 
   return $defaultFilter;
