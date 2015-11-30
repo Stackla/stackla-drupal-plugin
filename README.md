@@ -2,6 +2,7 @@
 
 ## Overview
 Stackla is a social content marketing platform used by hundreds of global brands, agencies, media companies, and nonprofits to discover, curate and publish the best content from the social web.
+
 This module allows you to integrate Stackla Widgets into your Drupal site.
 Currently a 'Stackla Widget' field type is supported, that can be added to any
 fieldable entity. The widget options can be configured on the field, and the
