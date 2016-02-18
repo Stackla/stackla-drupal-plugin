@@ -16,7 +16,7 @@
     </div>
   <?php endif; ?>
   <?php if (!empty($data['look_and_feel']['embed_code'])): ?>
-  <div class="stackla-widget">
+  <div class="stackla-widget-wrapper">
     <?php print $data['look_and_feel']['embed_code'];?>
   </div>
   <?php endif; ?>
