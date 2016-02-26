@@ -3,7 +3,7 @@ description = The base module of the Stackla Suite. Connects your drupal site to
 dependencies[] = composer_manager
 dependencies[] = encrypt
 configure = admin/config/services/stackla
-package = Stackla for Drupal
+package = Stackla
 core = 7.x
 files[] = tests/stackla.test
 
