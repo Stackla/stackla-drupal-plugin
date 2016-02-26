@@ -8,7 +8,6 @@ This module allows you to integrate Stackla Widgets into your Drupal site.
 Currently a 'Stackla Widget' field type is supported, that can be added to any
 fieldable entity. The widget options can be configured on the field, and the
 resultant widget will be displayed.
-More integrations are planned!
 
 ## Requirement
 
