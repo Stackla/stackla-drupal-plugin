@@ -81,7 +81,8 @@ function stackla_field_authorise_validate(&$form, &$form_state) {
 function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   if (!empty($items[$delta]['widget_data']) && is_string($items[$delta]['widget_data'])) {
     $value = unserialize($items[$delta]['widget_data']);
-  } else {
+  }
+  else {
     $value = array();
   }
   $widget = $element;
@@ -93,7 +94,8 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
     // submits.
     if (empty($form_state['triggering_element'])) {
       $authorised = stackla_is_authenticated();
-    } else {
+    }
+    else {
       $authorised = TRUE;
     }
 
@@ -102,12 +104,14 @@ function stackla_field_field_widget_form(&$form, &$form_state, $field, $instance
         $widget += stackla_field_authorise_widget();
         if (!empty($form['#validate'])) {
           array_unshift($form['#validate'], 'stackla_field_authorise_validate');
-        } else {
+        }
+        else {
           $form['#validate'] = array('stackla_field_authorise_validate');
         }
 
         drupal_set_message(t('You need to authenticate with Stackla to add or edit Stackla info'), 'warning');
-      } else {
+      }
+      else {
         $permission_message = t('You do not have permission to use Stackla widgets. Ask your administrator to give you permission.');
         $widget += array(
           '#type' => 'fieldset',
@@ -999,7 +1003,8 @@ function stackla_field_element_validate($element, &$form_state) {
           form_set_error($field_error_name, t('Please provide a search value for your term'));
         }
         $widgetIsRequired = true;
-      } elseif ($element['terms'][$term_delta]['network']['#required'] == 1) {
+      }
+      elseif ($element['terms'][$term_delta]['network']['#required'] == 1) {
         $field_error_name = stackla_field_name_parser($element['terms'][$term_delta]['network']['#name'], $field_name);
         form_set_error($field_error_name, t('Please add aggregation term'));
       }
@@ -1437,17 +1442,20 @@ function stackla_field_field_update($entity_type, $entity, $field, $instance, $l
                 $data['look_and_feel']['stackla_id'] = $new_widget->id;
                 $data['look_and_feel']['embed_code'] = $new_widget->embed_code;
                 $data['look_and_feel']['filter_id'] = stackla_field_get_defaultFilter($data);
-              } else {
+              }
+              else {
                 if (is_object($new_widget)) {
                   $errors = implode(', ', $new_widget->getErrors());
-                } else {
+                }
+                else {
                   $errors = t('Null returned');
                 }
                 drupal_set_message(t('Unable to create widget: @error', array(
                   '@error' => $errors,
                     )), 'error');
               }
-            } else {
+            }
+            else {
               // Type has not changed, but something else has, so we run update.
               $stackla_widget = stackla_field_prepare_widget($data);
               if ($updated_widget = stackla_update_widget($stackla_widget)) {
@@ -1834,12 +1842,14 @@ function stackla_field_save_defaultFilter($defaultFilter, $original_filter, $fil
         $defaultFilter['stackla_id'] = $new_filter->id;
         $defaultFilter['tag_id'] = $tagId;
         drupal_set_message(t('Default filter created in Stackla'));
-      } else {
+      }
+      else {
         // Log error, set message.
         drupal_set_message(t('Unable to create Default filter'), 'error');
       }
     }
-  } else {
+  }
+  else {
     if (stackla_update_filter($stackla_filter, $original_filter)) {
       drupal_set_message(t('Default filter updated in Stackla'));
     }

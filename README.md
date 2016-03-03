@@ -26,7 +26,6 @@ This module requires the following modules:
 
 ### Install via Drush (Recommended)
 
-* Read the "Installation and Usage For Site Builders" for https://drupal.org/project/composer_manager
 * `drush en stackla` to enable Stackla module 
 
 ### Install manually

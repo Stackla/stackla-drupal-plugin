@@ -25,9 +25,9 @@
 
   .filter{
     &-default-fieldset{
-        .form-item{
-            display: inline-block;
-        }
+      .form-item{
+        display: inline-block;
+      }
     }
     &-fieldset{
       border: none;
@@ -64,98 +64,98 @@
 }
 
 .st{
-    &-hide{
-        display: none;
+  &-hide{
+    display: none;
+  }
+  &-widget{
+    &Style, &Type{
+      width: 150px;
+      height: 120px;
+      display: inline-block;
+      position: relative;
+      text-align: center;
+      &:before{
+        content: "";
+        display: inline-block;
+        height: 80px;
+        width: 100%;
+        background-position: center center;
+        background-repeat: no-repeat;
+        background-size: auto 100%;
+      }
+      &-wrapper{
+        padding-top: 10px;
+      }
+      input{
+        margin-right: 0;
+      }
+      span{
+        display: block;
+      }
+      .ajax-progress {
+        bottom: 0px;
+        margin-left: -20px;
+        position: absolute;
+      }
     }
-    &-widget{
-        &Style, &Type{
-            width: 150px;
-            height: 120px;
-            display: inline-block;
-            position: relative;
-            text-align: center;
-            &:before{
-                content: "";
-                display: inline-block;
-                height: 80px;
-                width: 100%;
-                background-position: center center;
-                background-repeat: no-repeat;
-                background-size: auto 100%;
-            }
-            &-wrapper{
-                padding-top: 10px;
-            }
-            input{
-                margin-right: 0;
-            }
-            span{
-                display: block;
-            }
-            .ajax-progress {
-                bottom: 0px;
-                margin-left: -20px;
-                position: absolute;
-            }
+    &Style{
+      &-base_waterfall{
+        &:before{
+          background-image: url(../img/styles/base_waterfall.png)
         }
-        &Style{
-            &-base_waterfall{
-                &:before{
-                    background-image: url(../img/styles/base_waterfall.png)
-                }
-            }
-            &-base_carousel{
-                &:before{
-                    background-image: url(../img/styles/base_carousel.png)
-                }
-            }
-            &-base_billboard{
-                &:before{
-                    background-image: url(../img/styles/base_billboard.png)
-                }
-            }
-            &-base_feed{
-                &:before{
-                    background-image: url(../img/styles/base_feed.png)
-                }
-            }
-            &-base_slideshow{
-                &:before{
-                    background-image: url(../img/styles/base_slideshow.png)
-                }
-            }
+      }
+      &-base_carousel{
+        &:before{
+          background-image: url(../img/styles/base_carousel.png)
         }
-        &Type{
-            &-new{
-                &:before{
-                    background-image: url(../img/types/new.png)
-                }
-                &.on{
-                    &:before{
-                        background-image: url(../img/types/new-on.png)
-                    }
-                }
-            }
-            &-clone{
-                &:before{
-                    background-image: url(../img/types/clone.png)
-                }
-                &.on{
-                    &:before{
-                        background-image: url(../img/types/clone-on.png)
-                    }
-                }
-            }
-            &-derive{
-                &:before{
-                    background-image: url(../img/types/derive.png)
-                }
-                &.on{
-                    &:before{
-                        background-image: url(../img/types/derive-on.png)
-                    }
-                }
-            }
+      }
+      &-base_billboard{
+        &:before{
+          background-image: url(../img/styles/base_billboard.png)
         }
+      }
+      &-base_feed{
+        &:before{
+          background-image: url(../img/styles/base_feed.png)
+        }
+      }
+      &-base_slideshow{
+        &:before{
+          background-image: url(../img/styles/base_slideshow.png)
+        }
+      }
     }
+    &Type{
+      &-new{
+        &:before{
+          background-image: url(../img/types/new.png)
+        }
+        &.on{
+          &:before{
+            background-image: url(../img/types/new-on.png)
+          }
+        }
+      }
+      &-clone{
+        &:before{
+          background-image: url(../img/types/clone.png)
+        }
+        &.on{
+          &:before{
+            background-image: url(../img/types/clone-on.png)
+          }
+        }
+      }
+      &-derive{
+        &:before{
+          background-image: url(../img/types/derive.png)
+        }
+        &.on{
+          &:before{
+            background-image: url(../img/types/derive-on.png)
+          }
+        }
+      }
+    }
+  }
 }

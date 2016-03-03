@@ -92,7 +92,8 @@ function stackla_revoke_authentication() {
     $goto = $user->data['stackla_return_path'];
     unset($user->data['stackla_return_path']);
     user_save($user);
-  } else {
+  }
+  else {
     $goto = 'admin/config/services/stackla';
   }
   drupal_goto($goto);
@@ -141,11 +142,13 @@ function stackla_outh_callback() {
 
     if ($response === false) {
       drupal_set_message(t('Failed to authorize with Stackla.'), 'error');
-    } else {
+    }
+    else {
       stackla_set_access_token($credentials->token);
       drupal_set_message(t('Successfully authorized with Stackla'), 'status');
     }
-  } else if (isset($_GET['error']) && isset($_GET['error_description'])) {
+  }
+  elseif (isset($_GET['error']) && isset($_GET['error_description'])) {
       drupal_set_message(t($_GET['error_description']), 'error');
   }
   if (!empty($user->data['stackla_return_path'])) {

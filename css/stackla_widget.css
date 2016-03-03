@@ -2,7 +2,7 @@
 * @file: Basic CSS for Stackla field output.
 */
 
-.stackla-widget {
-
+.stackla-widget-wrapper {
+  width: 100%;
 }
 
