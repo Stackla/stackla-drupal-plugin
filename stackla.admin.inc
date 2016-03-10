@@ -1,7 +1,8 @@
 <?php
 
 /**
- * @file: Stackla Base admin functions.
+ * @file
+ * Stackla Base admin functions.
  */
 
 /**
@@ -22,7 +23,7 @@ function stackla_settings_form($form, &$form_state) {
     '#type' => 'textfield',
     '#value' => $base_url . '/admin/config/services/stackla/accesscallback',
     '#disabled' => TRUE,
-    '#description' => t("Please copy + paste this URL into the 'Callback URL' field in the Drupal plugin configuration screen in Stackla.")
+    '#description' => t("Please copy + paste this URL into the 'Callback URL' field in the Drupal plugin configuration screen in Stackla."),
   );
 
   $form['from-stackla'] = array(
@@ -55,7 +56,7 @@ function stackla_settings_form($form, &$form_state) {
   $form['auth'] = array(
     '#type' => 'fieldset',
     '#title' => t('Step 3: Authorize'),
-    '#description' => t("You need to authorize Drupal to access your Stackla account. Click 'Authorize' below, you'll be prompted to log in to Stackla to provide authorization.")
+    '#description' => t("You need to authorize Drupal to access your Stackla account. Click 'Authorize' below, you'll be prompted to log in to Stackla to provide authorization."),
   );
 
   if (stackla_check_requirements()) {
@@ -83,15 +84,16 @@ function stackla_settings_form($form, &$form_state) {
         '#submit' => array('stackla_admin_authenticate'),
       );
     }
-  } else {
-      // Add authentication link.
-      $form['auth']['authenticate'] = array(
-        '#type' => 'submit',
-        '#disabled' => true,
-        '#value' => t('Sign in as a Stackla user'),
-        '#op' => 'authenticate',
-        '#submit' => array('stackla_authenticate'),
-      );
+  }
+  else {
+    // Add authentication link.
+    $form['auth']['authenticate'] = array(
+      '#type' => 'submit',
+      '#disabled' => TRUE,
+      '#value' => t('Sign in as a Stackla user'),
+      '#op' => 'authenticate',
+      '#submit' => array('stackla_authenticate'),
+    );
   }
 
   $form['debug'] = array(
@@ -113,20 +115,26 @@ function stackla_settings_form($form, &$form_state) {
     '#suffix' => '</div>',
   );
 
-  //CSS
-  $css = drupal_get_path('module','stackla') . '/css/stackla_powered.css';
+  // CSS.
+  $css = drupal_get_path('module', 'stackla') . '/css/stackla_powered.css';
 
   $form['#attached'] = array(
     'css' => array($css),
   );
 
-  return(system_settings_form($form));
+  return system_settings_form($form);
 }
 
+/**
+ * Stackla authentication.
+ */
 function stackla_admin_authenticate($form, &$form_state) {
   stackla_authenticate();
 }
 
+/**
+ * Revoke Stackla authentication.
+ */
 function stackla_admin_revoke_authentication($form, &$form_state) {
   stackla_revoke_authentication();
 }

@@ -5,6 +5,3 @@ dependencies[] = encrypt
 configure = admin/config/services/stackla
 package = Stackla
 core = 7.x
-files[] = tests/stackla.test
-
-version = 7.x-1.0

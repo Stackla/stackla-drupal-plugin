@@ -1,15 +1,15 @@
 <?php
 
 /**
- * @file: Stackla Base install functions.
+ * @file
+ * Stackla Base install functions.
  */
 
 /**
-* Implements hook_requirements().
-*/
+ * Implements hook_requirements().
+ */
 function stackla_requirements($phase) {
   $requirements = array();
-  $t = get_t();
 
   return $requirements;
 }
@@ -18,21 +18,19 @@ function stackla_requirements($phase) {
  * Implements hook_install().
  */
 function stackla_install() {
-  $t = get_t();
-  $config_link = l($t('configure the module'), 'admin/config/services/stackla');
-  drupal_set_message($t('Stackla module installed, you must download and extract the Stackla SDK to your libraries folder. Then !configure here. See the module README for more information.', array(
-    '!configure' => $config_link,
-  )), 'status');
+  drupal_set_message('Stackla module installed, you will need to run Composer\'s update command for the dependency. Then configure the module. See the module README for more information.', 'status');
 
   // These variables are not exposed in the admin configuration,
   // but they are available to change for internal development purposes.
-  variable_set('stackla_host_name','https://api.stackla.com/api/');
-  variable_set('stackla_stack_oauth_host','https://api.stackla.com/api/');
+  variable_set('stackla_host_name', 'https://api.stackla.com/api/');
+  variable_set('stackla_stack_oauth_host', 'https://api.stackla.com/api/');
 }
 
 /**
-* Implements hook_uninstall().
+ * Implements hook_uninstall().
  */
 function stackla_uninstall() {
-  db_query("DELETE FROM {variable} WHERE name LIKE 'stackla_%'");
+  db_delete('variable')
+    ->condition('name', 'stackla_%', 'LIKE')
+    ->execute();
 }

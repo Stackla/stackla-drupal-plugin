@@ -1,14 +1,21 @@
 <?php
 
 /**
- * @file: Stackla Base tests.
+ * @file
+ * Stackla Base tests.
  */
 
+/**
+ * Stackla administration test case.
+ */
 class StacklaAdministrationTestCase extends DrupalWebTestCase {
 
   protected $privilegedUser;
   protected $notPrivilegedUser;
 
+  /**
+   * Get module info.
+   */
   public static function getInfo() {
     return array(
       'name' => t('Stackla Administration'),
@@ -17,6 +24,9 @@ class StacklaAdministrationTestCase extends DrupalWebTestCase {
     );
   }
 
+  /**
+   * Mock a admin user.
+   */
   public function setUp() {
     // Enable Stackla Base.
     parent::setUp('stackla');
@@ -25,10 +35,13 @@ class StacklaAdministrationTestCase extends DrupalWebTestCase {
       'access administration pages',
       'access site reports',
       'administer site configuration',
-      ));
+    ));
     $this->notPrivilegedUser = $this->drupalCreateUser(array());
   }
 
+  /**
+   * Test configuration page.
+   */
   public function testConfigPage() {
     $this->drupalLogin($this->privilegedUser);
     $config_page = 'admin/config/services/stackla';
@@ -39,22 +52,23 @@ class StacklaAdministrationTestCase extends DrupalWebTestCase {
 
     $this->drupalGet($config_page);
 
-    $this->assertFieldById('edit-stackla-api-key','',t('The API key field appears on the config page'));
+    $this->assertFieldById('edit-stackla-api-key', '', t('The API key field appears on the config page'));
 
-    $this->drupalPost(NULL,$edit,t('Save configuration'));
+    $this->drupalPost(NULL, $edit, t('Save configuration'));
 
     $saved_key = variable_get('stackla_api_key');
 
-    $this->assertEqual($saved_key,$test_key,t('The API key is stored correctly'));
+    $this->assertEqual($saved_key, $test_key, t('The API key is stored correctly'));
 
-    $this->assertFieldById('edit-stackla-api-key',$test_key,t('The saved key appears in the config form'));
+    $this->assertFieldById('edit-stackla-api-key', $test_key, t('The saved key appears in the config form'));
 
-    //Check that anon users can't access the config
+    // Check that anon users can't access the config.
     $this->drupalLogout();
     $this->drupalGet($config_page);
     $this->assertResponse(403, 'Access is denied on the administration page for anonymous user.');
 
-    //Check that a registered user without the correct permissions can't see the config page.
+    // Check that a registered user without the correct permissions can't see
+    // the config page.
     $this->drupalLogin($this->notPrivilegedUser);
     $this->drupalGet($config_page);
     $this->assertResponse(403, 'Access is denied on the administration page for user without admin permission.');
@@ -62,12 +76,14 @@ class StacklaAdministrationTestCase extends DrupalWebTestCase {
 
   }
 
+  /**
+   * Test report page.
+   */
   public function testReportPage() {
     $this->drupalLogin($this->privilegedUser);
     $reports_page = 'admin/reports/status';
     $this->drupalGet($reports_page);
-    $this->assertText('Stackla SDK library','Stackla report appears in report page');
+    $this->assertText('Stackla SDK library', 'Stackla report appears in report page');
   }
 
 }
-

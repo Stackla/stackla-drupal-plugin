@@ -1,18 +1,18 @@
 <?php
 
 /**
- * @file: Stackla field install functions.
+ * @file
+ * Stackla field install functions.
  */
 
 /**
-* Implements hook_field_schema().
-*/
+ * Implements hook_field_schema().
+ */
 function stackla_field_field_schema($field) {
   $schema = array();
-  $schema['columns']['widget_data'] = array (
+  $schema['columns']['widget_data'] = array(
     'type' => 'blob',
     'not null' => TRUE,
   );
   return $schema;
 }
-
