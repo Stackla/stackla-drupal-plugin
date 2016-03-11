@@ -18,7 +18,8 @@ function stackla_requirements($phase) {
  * Implements hook_install().
  */
 function stackla_install() {
-  drupal_set_message(t('Stackla module installed, you will need to run Composer\'s update command for the dependency. Then configure the module. See the module README for more information.'), 'status');
+  $t = get_t();
+  drupal_set_message($t("Stackla module installed, you will need to run Composer\'s update command for the dependency. Then configure the module. See the module README for more information."), 'status');
 
   // These variables are not exposed in the admin configuration,
   // but they are available to change for internal development purposes.
