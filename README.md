@@ -1,5 +1,7 @@
 # Stackla
 
+# _Copyright © 2012 to present. Stackla, Inc., Stackla Pty Ltd., and Stackla Ltd. All rights reserved._
+
 [Stackla](https://stackla.com) is a social content marketing platform used by hundreds of global brands, 
 agencies, media companies, and nonprofits to discover, curate and publish the best 
 content from the social web.
